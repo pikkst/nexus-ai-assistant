@@ -304,7 +304,7 @@ so that I can reason about user input and produce useful responses.
 
 ### Task: ARCH-007 — Memory / Vector Store
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 **EST:** 5 SP
 
@@ -322,12 +322,12 @@ so that I can recall past conversations and provide more contextual responses.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Memory service that stores conversation snippets or embeddings
-- [ ] **AC-2:** Save/load support for persistent local storage
-- [ ] **AC-3:** Basic retrieval by similarity or keyword search
-- [ ] **AC-4:** Configurable memory path and storage format
-- [ ] **AC-5:** Cleanup and pruning strategy for stale entries
-- [ ] **AC-6:** Unit tests for store, retrieve, and persistence behavior
+- [x] **AC-1:** Memory service that stores conversation snippets or embeddings
+- [x] **AC-2:** Save/load support for persistent local storage
+- [x] **AC-3:** Basic retrieval by similarity or keyword search
+- [x] **AC-4:** Configurable memory path and storage format
+- [x] **AC-5:** Cleanup and pruning strategy for stale entries
+- [x] **AC-6:** Unit tests for store, retrieve, and persistence behavior
 
 ## Definition of Done
 
@@ -339,6 +339,9 @@ so that I can recall past conversations and provide more contextual responses.
 ---
 
 **EST:** 5 SP
+
+**RT:** 2026-07-12
+**QA:** 2026-07-12
 
 ---
 
@@ -515,6 +518,7 @@ so that I can personalize my experience.
 | ARCH-004 | Speech-to-Text Engine | 2026-07-12 | Backend Agent |
 | ARCH-005 | Text-to-Speech Engine | 2026-07-12 | Backend Agent |
 | ARCH-006 | LLM Integration | 2026-07-12 | Backend Agent |
+| ARCH-007 | Memory / Vector Store | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
 
 ---

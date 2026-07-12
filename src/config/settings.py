@@ -47,6 +47,9 @@ class NexusConfig:
 
     # Memory
     memory_path: str = str(Path("~/.nexus/memory").expanduser())
+    memory_storage_format: str = "json"
+    memory_max_entries: int = 1000
+    memory_max_age_days: int = 90
 
     # UI
     theme: str = "dark"

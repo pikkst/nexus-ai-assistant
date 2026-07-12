@@ -23,6 +23,9 @@ class TestNexusConfigDefaults:
         assert config.ollama_url == "http://localhost:11434"
         assert config.llm_model == "llama3.1"
         assert config.llm_timeout == 60.0
+        assert config.memory_storage_format == "json"
+        assert config.memory_max_entries == 1000
+        assert config.memory_max_age_days == 90
 
 
 class TestNexusConfigPersistence:
@@ -40,6 +43,8 @@ class TestNexusConfigPersistence:
             language="en",
             llm_model="mistral",
             ollama_url="http://127.0.0.1:11434",
+            memory_path="data/memory.json",
+            memory_max_entries=250,
         )
         out = tmp_path / "config.json"
         config.save(out)
@@ -50,6 +55,8 @@ class TestNexusConfigPersistence:
         assert loaded.language == "en"
         assert loaded.llm_model == "mistral"
         assert loaded.ollama_url == "http://127.0.0.1:11434"
+        assert loaded.memory_path == "data/memory.json"
+        assert loaded.memory_max_entries == 250
         assert loaded.camera_resolution == (640, 480)
 
     def test_load_missing_returns_defaults(self, tmp_path: Path) -> None:
