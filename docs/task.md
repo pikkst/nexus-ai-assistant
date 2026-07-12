@@ -387,7 +387,7 @@ so that I can see the assistant’s state and interact with it intuitively.
 
 ### Task: INTEGRATION-001 — Main Application & Pipeline
 
-**Status:** 📋 BACKLOG
+**Status:** ⏳ IN PROGRESS
 
 **EST:** 8 SP
 
@@ -405,12 +405,12 @@ so that I can speak to the assistant and receive a spoken response.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Bootstrapping flow for all major services
-- [ ] **AC-2:** Event-driven orchestration between modules
-- [ ] **AC-3:** Clean startup and shutdown lifecycle
-- [ ] **AC-4:** Configuration-driven wiring for enabled or disabled features
-- [ ] **AC-5:** Basic error recovery and logging across modules
-- [ ] **AC-6:** End-to-end smoke test for a simple request-response cycle
+- [x] **AC-1:** Bootstrapping flow for all major services
+- [x] **AC-2:** Event-driven orchestration between modules
+- [x] **AC-3:** Clean startup and shutdown lifecycle
+- [x] **AC-4:** Configuration-driven wiring for enabled or disabled features
+- [x] **AC-5:** Basic error recovery and logging across modules
+- [x] **AC-6:** End-to-end smoke test for a simple request-response cycle
 
 ## Definition of Done
 
@@ -502,6 +502,397 @@ so that I can personalize my experience.
 
 **RT:** 2026-07-12
 **QA:** 2026-07-12
+
+---
+
+## Companion & Workhorse Roadmap
+
+The following backlog turns the existing collection of services into a coherent assistant. The
+recommended implementation order is: runtime integration, state machine, tools, task management,
+structured memory, persona, evaluation, safe learning, unified UI, and packaging repair.
+
+---
+
+### Task: CORE-001 — Assistant Runtime State Machine
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Implement the authoritative Nexus runtime state machine and event model. Runtime states must drive
+the UI and face rather than being inferred independently by each component.
+
+## User Story
+
+As a Nexus user,
+I need clear and truthful feedback about what the assistant is doing
+so that listening, planning, acting, waiting, and failure states are understandable.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Typed states for IDLE, LISTENING, UNDERSTANDING, PLANNING, ACTING, VERIFYING, SPEAKING, WAITING_CONFIRMATION, BLOCKED, ERROR, and SLEEPING
+- [ ] **AC-2:** Validated state transitions and typed transition events
+- [ ] **AC-3:** Subscriber API for UI, face, logging, and tests
+- [ ] **AC-4:** Invalid transitions fail predictably without corrupting runtime state
+- [ ] **AC-5:** Face emotions are mapped from authoritative runtime state
+- [ ] **AC-6:** Unit tests cover normal, interrupted, blocked, and error flows
+
+## Definition of Done
+
+- State machine tests pass
+- UI and face can consume state events without direct service coupling
+- PR merged from `feature/runtime-state-machine` into `develop`
+
+---
+
+**EST:** 5 SP
+
+---
+
+### Task: TOOLS-001 — Tool Protocol, Registry & Permissions
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Create a typed tool interface and registry through which Nexus can inspect and act on local
+resources. Every invocation must have a risk level, permission decision, structured result, and
+audit entry.
+
+## User Story
+
+As a Nexus user,
+I need the assistant to perform useful work within explicit boundaries
+so that it can act without hiding risky or destructive operations.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Typed Tool, ToolRequest, ToolResult, and ToolError contracts
+- [ ] **AC-2:** Registry supports discovery, validation, invocation, timeout, and cancellation
+- [ ] **AC-3:** Risk classes distinguish read-only, local-write, external, and destructive actions
+- [ ] **AC-4:** Permission policy requires confirmation according to configured risk level
+- [ ] **AC-5:** Initial read-only filesystem and project-inspection tools are implemented
+- [ ] **AC-6:** Every invocation produces a local audit record without leaking secrets
+
+## Definition of Done
+
+- Tool contract and permission tests pass
+- A mocked end-to-end request can select, invoke, and verify a tool
+- PR merged from `feature/tool-registry-permissions` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: TASKS-001 — Goals, Plans & Resumable Tasks
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Add persistent goals and task execution records so Nexus can plan multi-step work, report progress,
+handle blockers, and resume interrupted work.
+
+## User Story
+
+As a Nexus user,
+I need complex requests to become visible and resumable plans
+so that I can trust progress and continue work across sessions.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Typed goal, plan step, dependency, result, blocker, and status models
+- [ ] **AC-2:** Plans support pending, active, waiting, blocked, failed, and completed states
+- [ ] **AC-3:** Task state persists locally and can be resumed after restart
+- [ ] **AC-4:** User can inspect, pause, cancel, or amend a plan
+- [ ] **AC-5:** Completion requires evidence or explicit verification, not only an LLM claim
+- [ ] **AC-6:** Tests cover interruption, recovery, cancellation, and blocked tasks
+
+## Definition of Done
+
+- A multi-step mocked task survives restart and resumes correctly
+- Progress is available to both UI and conversational responses
+- PR merged from `feature/goals-resumable-tasks` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: MEM-002 — Structured Multi-Layer Memory
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Evolve the current conversation-snippet store into working, episodic, semantic, preference, and
+procedural memory with explicit provenance, confidence, importance, sensitivity, and retention.
+
+## User Story
+
+As a Nexus user,
+I need the assistant to remember useful context accurately
+so that it becomes more helpful without storing everything indiscriminately.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Schema supports working, episodic, semantic, preference, and procedural memory types
+- [ ] **AC-2:** Every memory records source, confidence, importance, sensitivity, timestamps, and scope
+- [ ] **AC-3:** Memory manager decides what is promoted to long-term memory
+- [ ] **AC-4:** Retrieval combines keyword and optional local embedding search behind one interface
+- [ ] **AC-5:** Duplicate consolidation, contradiction handling, summaries, and retention policies are supported
+- [ ] **AC-6:** Existing JSON memories migrate safely or remain readable
+
+## Definition of Done
+
+- Migration and retrieval tests pass
+- Context builder can request only relevant memory types within a token budget
+- PR merged from `feature/structured-memory` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: MEM-003 — Memory Consent & Management UI
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Give the user transparent control over what Nexus remembers, including inspection, correction,
+deletion, export, retention, and sensitive-memory consent.
+
+## User Story
+
+As a privacy-conscious Nexus user,
+I need to see and control the assistant's memory
+so that personalization remains understandable and reversible.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** UI lists memories by type, scope, source, and sensitivity
+- [ ] **AC-2:** User can search, edit, delete, pin, and correct individual memories
+- [ ] **AC-3:** User can export or clear memory by type, project, or time range
+- [ ] **AC-4:** Sensitive information follows configurable ask, allow, or never-store policy
+- [ ] **AC-5:** Nexus can answer “What do you remember about me?” from actual stored data
+- [ ] **AC-6:** Memory changes are audited and immediately affect retrieval
+
+## Definition of Done
+
+- Memory-control smoke tests pass
+- Deleted memories are no longer returned by retrieval
+- PR merged from `feature/memory-consent-ui` into `develop`
+
+---
+
+**EST:** 5 SP
+
+---
+
+### Task: PERSONA-001 — Persona & Interaction Modes
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Create a bounded, configurable Nexus persona that stays consistent across text, voice, face, and
+proactive behavior while preserving factual reliability.
+
+## User Story
+
+As a Nexus user,
+I need a playful but adjustable companion
+so that interaction feels personal without interfering with focused work.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Companion, balanced, and focused interaction modes are available
+- [ ] **AC-2:** Settings include playfulness, proactivity, response detail, quiet hours, and unsolicited suggestions
+- [ ] **AC-3:** Persona changes expression and delivery but never lowers factual or permission standards
+- [ ] **AC-4:** Structured response metadata can drive emotion, voice delivery, and confidence cues
+- [ ] **AC-5:** Proactive behavior is rate-limited, interruptible, and disabled during quiet hours
+- [ ] **AC-6:** Tests verify stable behavior and settings persistence
+
+## Definition of Done
+
+- Mode changes visibly affect style without changing task correctness
+- Persona settings persist and are exposed in the settings UI
+- PR merged from `feature/persona-interaction-modes` into `develop`
+
+---
+
+**EST:** 5 SP
+
+---
+
+### Task: EVAL-001 — Result Verification & Feedback
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Add an evaluation layer that verifies tool outcomes, records evidence, collects user feedback, and
+prevents Nexus from reporting success when required work remains incomplete.
+
+## User Story
+
+As a Nexus user,
+I need completed work to be checked before it is reported as finished
+so that the assistant is dependable rather than merely convincing.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Task steps can define machine-checkable or user-confirmed success criteria
+- [ ] **AC-2:** Verification results include evidence, confidence, and failure explanation
+- [ ] **AC-3:** Failed verification returns work to an actionable state
+- [ ] **AC-4:** User feedback supports positive, negative, and explanatory signals
+- [ ] **AC-5:** Local metrics track success, corrections, latency, and memory usefulness
+- [ ] **AC-6:** Tests prove that unsupported completion claims are rejected
+
+## Definition of Done
+
+- Mocked tasks cannot complete without satisfying their verification contract
+- Evaluation records can be consumed by the learning layer
+- PR merged from `feature/result-verification` into `develop`
+
+---
+
+**EST:** 5 SP
+
+---
+
+### Task: LEARN-001 — Safe Reflection & Learning Loop
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Implement a local reflection loop that converts verified outcomes and user feedback into procedural
+lessons and improvement proposals. Source code, security policy, permissions, and core prompts must
+not be changed automatically.
+
+## User Story
+
+As a Nexus user,
+I need the assistant to learn from successful and failed work safely
+so that repeated tasks improve while I retain control over system changes.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Reflection consumes task evidence and user feedback rather than model opinion alone
+- [ ] **AC-2:** Lessons include scope, confidence, provenance, and measurable expected benefit
+- [ ] **AC-3:** Lessons are stored as reviewable procedural memory
+- [ ] **AC-4:** Conflicting or low-confidence lessons are quarantined for review
+- [ ] **AC-5:** Code, prompts, permissions, and safety rules require explicit user approval to change
+- [ ] **AC-6:** A local development report summarizes outcomes and proposed improvements
+
+## Definition of Done
+
+- A repeated mocked task can reuse an approved lesson
+- No protected system artifact is modified without confirmation
+- PR merged from `feature/safe-learning-loop` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: UI-008 — Unified Companion Workspace
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Extend the main UI into a unified workspace combining the animated face, conversation, runtime
+state, active plan, tool activity, evidence, confirmations, memory controls, and settings.
+
+## User Story
+
+As a Nexus user,
+I need one clear workspace for companionship and serious work
+so that I can understand and control the assistant without switching interfaces.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Face, transcript, runtime status, and current task are visible together
+- [ ] **AC-2:** Plan steps, tool activity, and verification evidence update live
+- [ ] **AC-3:** Permission requests are explicit and show action, scope, and risk
+- [ ] **AC-4:** User can interrupt speech, cancel work, mute sensors, and open memory controls
+- [ ] **AC-5:** Layout supports companion, balanced, and focused modes
+- [ ] **AC-6:** Accessibility and desktop-responsive smoke tests pass
+
+## Definition of Done
+
+- The complete mocked assistant lifecycle is understandable from the UI
+- Controls remain responsive during model, audio, and tool operations
+- PR merged from `feature/unified-companion-workspace` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: ARCH-010 — Package Layout & CLI Repair
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Align the Python source layout, package discovery, documentation, and executable entry point. The
+current packaging configuration searches for `nexus*` packages while source modules are located
+directly under `src/`.
+
+## User Story
+
+As a Nexus maintainer,
+I need a consistent installable package layout
+so that development imports and distributed installations behave the same way.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** A documented package layout decision is made and implemented
+- [ ] **AC-2:** Setuptools discovers every intended runtime package
+- [ ] **AC-3:** A `nexus` CLI entry point starts the application or reports missing services clearly
+- [ ] **AC-4:** Tests run against the installed package, not only the repository path
+- [ ] **AC-5:** README and installation instructions match the actual layout
+- [ ] **AC-6:** Clean-environment build and import smoke tests pass
+
+## Definition of Done
+
+- Wheel and source distribution build successfully
+- Installed CLI and module imports work in a clean environment
+- PR merged from `fix/package-layout-cli` into `develop`
+
+---
+
+**EST:** 5 SP
 
 ---
 

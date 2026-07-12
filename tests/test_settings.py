@@ -45,6 +45,9 @@ class TestNexusConfigPersistence:
             ollama_url="http://127.0.0.1:11434",
             memory_path="data/memory.json",
             memory_max_entries=250,
+            enable_audio_input=False,
+            enable_audio_output=False,
+            enable_memory=False,
         )
         out = tmp_path / "config.json"
         config.save(out)
@@ -57,6 +60,9 @@ class TestNexusConfigPersistence:
         assert loaded.ollama_url == "http://127.0.0.1:11434"
         assert loaded.memory_path == "data/memory.json"
         assert loaded.memory_max_entries == 250
+        assert not loaded.enable_audio_input
+        assert not loaded.enable_audio_output
+        assert not loaded.enable_memory
         assert loaded.camera_resolution == (640, 480)
 
     def test_load_missing_returns_defaults(self, tmp_path: Path) -> None:
