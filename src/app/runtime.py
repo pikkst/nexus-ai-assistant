@@ -19,6 +19,7 @@ from .contracts import (
 )
 from .events import RuntimeEvent, RuntimeState
 from .lifecycle import start_optional, stop_optional
+from .state_machine import RuntimeStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +40,18 @@ class NexusRuntime:
     def __init__(self, services: RuntimeServices, *, system_prompt: str) -> None:
         self.services = services
         self.system_prompt = system_prompt
-        self.state = RuntimeState.STOPPED
-        self._listeners: list[Callable[[RuntimeEvent], None]] = []
+        self.state_machine = RuntimeStateMachine()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._started = False
     def subscribe(self, callback: Callable[[RuntimeEvent], None]) -> None:
         """Subscribe to observable runtime events."""
-        self._listeners.append(callback)
+        self.state_machine.subscribe(callback)
+    @property
+    def state(self) -> RuntimeState:
+        return self.state_machine.state
+    def interrupt(self, message: str = "Interrupted") -> RuntimeEvent:
+        """Interrupt current work and return to idle."""
+        return self.state_machine.interrupt(message)
     async def start(self) -> None:
         """Start configured services, degrading gracefully when optional ones fail."""
         if self._started:
@@ -80,7 +86,7 @@ class NexusRuntime:
         prompt = text.strip()
         if not prompt:
             raise ValueError("text must not be empty")
-        self._emit(RuntimeState.THINKING, "Generating response", {"input": prompt})
+        self._emit(RuntimeState.PLANNING, "Generating response", {"input": prompt})
         try:
             context = self._memory_context(prompt)
             response = await self.services.llm.generate(
@@ -89,6 +95,7 @@ class NexusRuntime:
             answer = str(response.content).strip()
             if not answer:
                 raise RuntimeError("LLM returned an empty response")
+            self._emit(RuntimeState.VERIFYING, "Response validated")
             self._remember(prompt, answer)
             await self._speak(answer)
             self._emit(RuntimeState.IDLE, "Response complete", {"response": answer})
@@ -137,10 +144,4 @@ class NexusRuntime:
             logger.exception("Captured speech processing failed")
             self._emit(RuntimeState.ERROR, str(exc))
     def _emit(self, state: RuntimeState, message: str, data: dict[str, object] | None = None) -> None:
-        self.state = state
-        event = RuntimeEvent(state=state, message=message, data=dict(data or {}))
-        for callback in tuple(self._listeners):
-            try:
-                callback(event)
-            except Exception:
-                logger.exception("Runtime event subscriber failed")
+        self.state_machine.transition(state, message, data)

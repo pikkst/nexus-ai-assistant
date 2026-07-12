@@ -515,7 +515,7 @@ structured memory, persona, evaluation, safe learning, unified UI, and packaging
 
 ### Task: CORE-001 — Assistant Runtime State Machine
 
-**Status:** 📋 BACKLOG
+**Status:** ⏳ IN PROGRESS
 
 ---
 
@@ -532,12 +532,12 @@ so that listening, planning, acting, waiting, and failure states are understanda
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Typed states for IDLE, LISTENING, UNDERSTANDING, PLANNING, ACTING, VERIFYING, SPEAKING, WAITING_CONFIRMATION, BLOCKED, ERROR, and SLEEPING
-- [ ] **AC-2:** Validated state transitions and typed transition events
-- [ ] **AC-3:** Subscriber API for UI, face, logging, and tests
-- [ ] **AC-4:** Invalid transitions fail predictably without corrupting runtime state
-- [ ] **AC-5:** Face emotions are mapped from authoritative runtime state
-- [ ] **AC-6:** Unit tests cover normal, interrupted, blocked, and error flows
+- [x] **AC-1:** Typed states for IDLE, LISTENING, UNDERSTANDING, PLANNING, ACTING, VERIFYING, SPEAKING, WAITING_CONFIRMATION, BLOCKED, ERROR, and SLEEPING
+- [x] **AC-2:** Validated state transitions and typed transition events
+- [x] **AC-3:** Subscriber API for UI, face, logging, and tests
+- [x] **AC-4:** Invalid transitions fail predictably without corrupting runtime state
+- [x] **AC-5:** Face emotions are mapped from authoritative runtime state
+- [x] **AC-6:** Unit tests cover normal, interrupted, blocked, and error flows
 
 ## Definition of Done
 
