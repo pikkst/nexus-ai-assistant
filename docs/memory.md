@@ -16,7 +16,7 @@
 | Audio Playback | ✅ Complete (playback.py, tests added) |
 | Settings / Config | ✅ Complete (NexusConfig, UI panel, 7 tests) |
 | VAD | ✅ Built into capture pipeline |
-| STT | ✅ Complete (engine.py, 37 tests) |
+| STT | ✅ Complete (engine.py, 54 tests) |
 | TTS | 📋 Planned |
 | LLM Integration | 📋 Planned |
 | Camera/Vision | ✅ Complete (camera.py, tests added) |
@@ -104,7 +104,7 @@
 
 **What was built:**
 - `src/stt/engine.py` — `STTEngine` with faster-whisper, configurable model size/language, partial/final callbacks, graceful fallback, audio preprocessing utilities
-- `tests/test_stt.py` — 37 tests covering config, state management, transcription, callbacks, error handling, and audio preprocessing
+- `tests/test_stt.py` — 54 tests covering config, state management, transcription, callbacks, error handling, audio validation, compute type resolution, and audio preprocessing
 - `src/stt/__init__.py` — exports STTEngine, STTConfig, TranscriptionResult, Segment, STTState
 - `src/audio/capture.py` — AudioCapture with PyAudio callback mode, VAD integration, background thread
 - `src/audio/playback.py` — AudioPlayback with queue-based non-blocking playback, volume control
@@ -125,6 +125,10 @@
 - CustomTkinter for settings panel
 - Config persisted to `~/.nexus/config.json`
 - OpenCV for camera capture with graceful fallback
+- Audio input validation: 1-D float32 mono required, non-empty, finite values only
+- compute_type validated per device: int8_float16/int16 honored where supported, invalid values fall back with warning
+- Segment confidence renamed to speech_probability (1.0 - no_speech_prob proxy)
+- transcribe_stream no longer mutates instance callbacks (thread-safe per-call overrides)
 
 **Next Task:** ARCH-005 — Text-to-Speech Engine
 
@@ -175,10 +179,6 @@ class VoiceActivityDetector:
     def is_speech(self, frame: bytes) -> bool
     def reset(self) -> None
 ```
-
-### Inter-Module Data Types
-
-Same as before, with additional `AudioCaptureConfig`, `VadConfig`, and `NexusConfig` dataclasses.
 
 ### Settings API
 
@@ -265,8 +265,20 @@ class STTEngine:
 
     async def load_model(self) -> None
     async def unload_model(self) -> None
-    async def transcribe(self, audio: np.ndarray, *, fire_partial: bool = True) -> TranscriptionResult
-    async def transcribe_stream(self, audio: np.ndarray, ...) -> TranscriptionResult
+    async def transcribe(
+        self,
+        audio: np.ndarray,
+        *,
+        fire_partial: bool = True,
+        on_partial: Callable[[str], None] | None = None,
+        on_final: Callable[[TranscriptionResult], None] | None = None,
+    ) -> TranscriptionResult
+    async def transcribe_stream(
+        self,
+        audio: np.ndarray,
+        on_partial: Callable[[str], None] | None = None,
+        on_final: Callable[[TranscriptionResult], None] | None = None,
+    ) -> TranscriptionResult
 
     @staticmethod
     def normalize_audio(audio: np.ndarray, target_rms: float = 0.1) -> np.ndarray
@@ -295,12 +307,12 @@ class Segment:
     start: float
     end: float
     text: str
-    confidence: float
+    speech_probability: float
 ```
 
 ---
 
-## 8. Completed Tasks
+## 7. Completed Tasks
 
 | Task ID | Name | Completed | By |
 |---------|------|-----------|----|
@@ -315,5 +327,5 @@ class Segment:
 
 ---
 
-> **Last updated:** 2026-07-12
+> **Last updated:** 2026-07-12  
 > **Maintainer:** Documentation Agent
