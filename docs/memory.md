@@ -102,13 +102,15 @@
 
 **Current Task:** ARCH-007 — Memory / Vector Store
 
-**Most recently completed:** ARCH-006 — LLM Integration, ARCH-004 — Speech-to-Text Engine, ARCH-003 — Camera / Vision Service
+**Most recently completed:** ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine, ARCH-004 — Speech-to-Text Engine
 
 **What was built:**
 - `src/llm/client.py` — async Ollama chat client, structured responses, streaming, and typed backend errors
 - `src/llm/prompts.py` — validated system prompt and conversation history construction
 - `tests/test_llm.py` — tests for prompt flow, configuration, responses, streaming, timeouts, and backend failures
 - `src/config/settings.py` — persisted LLM URL, model, temperature, token limit, timeout, and system prompt settings
+- `src/tts/engine.py` — async Piper TTS engine with voice fallback and playback routing
+- `tests/test_tts.py` — 7 tests covering synthesis, playback, errors, and fallback behavior
 - `src/stt/engine.py` — `STTEngine` with faster-whisper, configurable model size/language, partial/final callbacks, graceful fallback, audio preprocessing utilities
 - `tests/test_stt.py` — 54 tests covering config, state management, transcription, callbacks, error handling, audio validation, compute type resolution, and audio preprocessing
 - `src/stt/__init__.py` — exports STTEngine, STTConfig, TranscriptionResult, Segment, STTState
@@ -326,6 +328,30 @@ class Segment:
 
 ---
 
+### TTS Engine API
+
+```python
+# src/tts/engine.py
+class TTSConfig:
+    voice: str = "en_US-lessac-medium"
+    speed: float = 1.0
+    language: str = "en"
+    model_dir: Path = Path("~/.nexus/voices")
+    fallback_voice: str | None = None
+
+class TTSEngine:
+    async def load_model(self) -> None
+    async def unload_model(self) -> None
+    async def synthesize(self, text: str) -> SynthesisResult
+    async def speak(self, text: str, playback: PlaybackService) -> SynthesisResult
+```
+
+Piper is the offline backend. Model loading and synthesis run through `asyncio.to_thread`.
+Generated 16-bit WAV is converted to mono `float32` samples for `AudioPlayback.play`.
+The configured fallback voice is tried when the primary voice is missing or unsupported.
+
+---
+
 ## 7. Completed Tasks
 
 | Task ID | Name | Completed | By |
@@ -337,6 +363,7 @@ class Segment:
 | ARCH-002 | Audio Playback Service | 2026-07-12 | Backend Agent |
 | ARCH-003 | Camera / Vision Service | 2026-07-12 | Backend Agent |
 | ARCH-004 | Speech-to-Text Engine | 2026-07-12 | Backend Agent |
+| ARCH-005 | Text-to-Speech Engine | 2026-07-12 | Backend Agent |
 | ARCH-006 | LLM Integration | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
 

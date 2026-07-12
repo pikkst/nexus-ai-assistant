@@ -218,7 +218,7 @@ so that I can understand user requests and respond meaningfully.
 
 ### Task: ARCH-005 — Text-to-Speech Engine
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 **EST:** 5 SP
 
@@ -236,12 +236,12 @@ so that I can respond to the user verbally.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** TTS service that accepts text and produces audio data
-- [ ] **AC-2:** Configurable voice, speed, and language settings
-- [ ] **AC-3:** Non-blocking synthesis path for assistant responses
-- [ ] **AC-4:** Output can be routed into the existing playback module
-- [ ] **AC-5:** Graceful handling of unsupported voices or missing model files
-- [ ] **AC-6:** Unit tests for synthesis request handling and fallback behavior
+- [x] **AC-1:** TTS service that accepts text and produces audio data
+- [x] **AC-2:** Configurable voice, speed, and language settings
+- [x] **AC-3:** Non-blocking synthesis path for assistant responses
+- [x] **AC-4:** Output can be routed into the existing playback module
+- [x] **AC-5:** Graceful handling of unsupported voices or missing model files
+- [x] **AC-6:** Unit tests for synthesis request handling and fallback behavior
 
 ## Definition of Done
 
@@ -253,6 +253,9 @@ so that I can respond to the user verbally.
 ---
 
 **EST:** 5 SP
+
+**RT:** 2026-07-12
+**QA:** 2026-07-12
 
 ---
 
@@ -510,6 +513,7 @@ so that I can personalize my experience.
 | ARCH-002 | Audio Playback Service | 2026-07-12 | Backend Agent |
 | ARCH-003 | Camera / Vision Service | 2026-07-12 | Backend Agent |
 | ARCH-004 | Speech-to-Text Engine | 2026-07-12 | Backend Agent |
+| ARCH-005 | Text-to-Speech Engine | 2026-07-12 | Backend Agent |
 | ARCH-006 | LLM Integration | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
 
