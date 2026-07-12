@@ -258,7 +258,7 @@ so that I can respond to the user verbally.
 
 ### Task: ARCH-006 — LLM Integration
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 **EST:** 5 SP
 
@@ -276,12 +276,12 @@ so that I can reason about user input and produce useful responses.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** LLM client configurable for a local backend such as Ollama
-- [ ] **AC-2:** Support for system prompts and conversation history
-- [ ] **AC-3:** Configurable temperature, max tokens, and model selection
-- [ ] **AC-4:** Error handling for unavailable backend or timeouts
-- [ ] **AC-5:** Response streaming or asynchronous execution path
-- [ ] **AC-6:** Unit tests for prompt construction and backend failure cases
+- [x] **AC-1:** LLM client configurable for a local backend such as Ollama
+- [x] **AC-2:** Support for system prompts and conversation history
+- [x] **AC-3:** Configurable temperature, max tokens, and model selection
+- [x] **AC-4:** Error handling for unavailable backend or timeouts
+- [x] **AC-5:** Response streaming or asynchronous execution path
+- [x] **AC-6:** Unit tests for prompt construction and backend failure cases
 
 ## Definition of Done
 
@@ -293,6 +293,9 @@ so that I can reason about user input and produce useful responses.
 ---
 
 **EST:** 5 SP
+
+**RT:** 2026-07-12
+**QA:** 2026-07-12
 
 ---
 
@@ -507,6 +510,7 @@ so that I can personalize my experience.
 | ARCH-002 | Audio Playback Service | 2026-07-12 | Backend Agent |
 | ARCH-003 | Camera / Vision Service | 2026-07-12 | Backend Agent |
 | ARCH-004 | Speech-to-Text Engine | 2026-07-12 | Backend Agent |
+| ARCH-006 | LLM Integration | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
 
 ---

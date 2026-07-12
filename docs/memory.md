@@ -18,7 +18,7 @@
 | VAD | ✅ Built into capture pipeline |
 | STT | ✅ Complete (engine.py, 54 tests) |
 | TTS | 📋 Planned |
-| LLM Integration | 📋 Planned |
+| LLM Integration | ✅ Complete (async Ollama client, prompt/history support, streaming) |
 | Camera/Vision | ✅ Complete (camera.py, tests added) |
 | Memory Store | 📋 Planned |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
@@ -52,6 +52,8 @@
 | D-029 | 2026-07-12 | faster-whisper for STT engine | Best offline accuracy, faster than original Whisper | Backend |
 | D-030 | 2026-07-12 | STT partial/final callback pattern | Supports streaming UX with interim results | Backend |
 | D-031 | 2026-07-12 | Audio preprocessing before STT | Normalize, trim silence, resample to 16kHz | Backend |
+| D-032 | 2026-07-12 | Direct async HTTP client for Ollama | Small offline API surface, injectable transport, no orchestration dependency | Backend |
+| D-033 | 2026-07-12 | Ollama newline-delimited JSON streaming | Native backend protocol and incremental UI-ready output | Backend |
 
 ---
 
@@ -98,11 +100,15 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** ARCH-005 — Text-to-Speech Engine
+**Current Task:** ARCH-007 — Memory / Vector Store
 
-**Most recently completed:** ARCH-004 — Speech-to-Text Engine, ARCH-003 — Camera / Vision Service, ARCH-009 — UI Settings Panel
+**Most recently completed:** ARCH-006 — LLM Integration, ARCH-004 — Speech-to-Text Engine, ARCH-003 — Camera / Vision Service
 
 **What was built:**
+- `src/llm/client.py` — async Ollama chat client, structured responses, streaming, and typed backend errors
+- `src/llm/prompts.py` — validated system prompt and conversation history construction
+- `tests/test_llm.py` — tests for prompt flow, configuration, responses, streaming, timeouts, and backend failures
+- `src/config/settings.py` — persisted LLM URL, model, temperature, token limit, timeout, and system prompt settings
 - `src/stt/engine.py` — `STTEngine` with faster-whisper, configurable model size/language, partial/final callbacks, graceful fallback, audio preprocessing utilities
 - `tests/test_stt.py` — 54 tests covering config, state management, transcription, callbacks, error handling, audio validation, compute type resolution, and audio preprocessing
 - `src/stt/__init__.py` — exports STTEngine, STTConfig, TranscriptionResult, Segment, STTState
@@ -116,6 +122,10 @@
 - `tests/test_settings.py` — 7 config tests
 
 **Key decisions:**
+- Use direct `httpx` integration with Ollama's local `/api/chat` endpoint
+- Keep request construction public and deterministic for testing and future backend adapters
+- Map backend connectivity/status errors and timeouts to separate LLM exceptions
+- Stream Ollama's newline-delimited JSON response as incremental text chunks
 - faster-whisper for STT (faster than OpenAI Whisper, good accuracy)
 - Partial/final callback pattern for streaming transcription UX
 - Audio preprocessing: normalize RMS, trim silence, resample to 16kHz
@@ -134,7 +144,7 @@
 - Segment confidence renamed to speech_probability (1.0 - no_speech_prob proxy)
 - transcribe_stream no longer mutates instance callbacks (thread-safe per-call overrides)
 
-**Next Task:** ARCH-005 — Text-to-Speech Engine
+**Next Task:** ARCH-007 — Memory / Vector Store
 
 ---
 
@@ -327,6 +337,7 @@ class Segment:
 | ARCH-002 | Audio Playback Service | 2026-07-12 | Backend Agent |
 | ARCH-003 | Camera / Vision Service | 2026-07-12 | Backend Agent |
 | ARCH-004 | Speech-to-Text Engine | 2026-07-12 | Backend Agent |
+| ARCH-006 | LLM Integration | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
 
 ---
