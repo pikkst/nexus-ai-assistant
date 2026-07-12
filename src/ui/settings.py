@@ -168,6 +168,15 @@ class SettingsWindow(ctk.CTk):
         self._theme_menu.set(self.config.theme)
         self._theme_menu.pack(fill="x", pady=(0, 12))
 
+        ctk.CTkLabel(container, text="Näo teema:").pack(anchor="w")
+        self._face_theme_menu = ctk.CTkOptionMenu(
+            container,
+            values=["classic", "neon_blue", "pixel", "red_alert", "cosmic"],
+            command=lambda value: setattr(self.config, "face_theme", value),
+        )
+        self._face_theme_menu.set(self.config.face_theme)
+        self._face_theme_menu.pack(fill="x", pady=(0, 12))
+
         # Save button
         ctk.CTkButton(container, text="Salvesta seaded", command=self._save).pack(
             fill="x", pady=(16, 0)

@@ -896,6 +896,46 @@ so that development imports and distributed installations behave the same way.
 
 ---
 
+### Task: UI-FACE-002 — Selectable Face Themes
+
+**Status:** ⏳ IN PROGRESS
+
+---
+
+## Task Description
+
+Add selectable visual themes to the animated Nexus face while preserving every emotion and
+animation. Include minimalist blue, pixel, red alert, and science-fiction variants alongside the
+classic appearance.
+
+## User Story
+
+As a Nexus user,
+I need several distinct face appearances
+so that the assistant can match my preferred mood and desktop style.
+
+## Acceptance Criteria
+
+- [x] **AC-1:** Classic, neon blue, pixel, red alert, and cosmic themes are available
+- [x] **AC-2:** Themes preserve every existing emotion and animation API
+- [x] **AC-3:** Pixel theme renders crisp rectangular eyes and mouth
+- [x] **AC-4:** Theme can be selected at construction time or changed while running
+- [x] **AC-5:** Face server exposes theme selection and theme discovery endpoints
+- [x] **AC-6:** Theme preference persists in NexusConfig and is available in settings UI
+- [x] **AC-7:** Unit tests cover all themes, emotions, runtime switching, and invalid values
+
+## Definition of Done
+
+- Theme tests and the complete regression suite pass
+- Existing face consumers continue to work with the classic default
+- PR created from `feature/face-themes` into `develop` after CORE-001 is merged
+
+---
+
+**EST:** 5 SP
+
+---
+
 ## Completed Tasks
 
 | Task ID | Name | Completed | By |
