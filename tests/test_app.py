@@ -39,7 +39,6 @@ class FakeLifecycle:
     def __init__(self) -> None:
         self.started = False
         self.stopped = False
-
     async def start(self) -> None:
         self.started = True
 
@@ -83,7 +82,8 @@ async def test_text_request_runs_end_to_end() -> None:
     assert "Relevant local memory" in llm.requests[0][1]["system_prompt"]
     assert [event.state for event in events] == [
         RuntimeState.IDLE,
-        RuntimeState.THINKING,
+        RuntimeState.PLANNING,
+        RuntimeState.VERIFYING,
         RuntimeState.IDLE,
         RuntimeState.STOPPED,
     ]

@@ -25,7 +25,7 @@
 | User Interface | 📋 Planned |
 | Main Pipeline | ⏳ In Progress (INTEGRATION-001) |
 | Packaging | 📋 Planned |
-| Runtime State Machine | 📋 Planned (CORE-001) |
+| Runtime State Machine | ⏳ In Progress (CORE-001) |
 | Tool Execution & Permissions | 📋 Planned (TOOLS-001) |
 | Goals & Resumable Tasks | 📋 Planned (TASKS-001) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
@@ -70,6 +70,9 @@
 | D-041 | 2026-07-12 | Tool use is typed, permissioned, auditable, and verified | Useful autonomy must remain transparent, bounded, and evidence-based | Architect |
 | D-042 | 2026-07-12 | Persona affects expression, not truth or safety standards | Playfulness must not reduce factual reliability or bypass user control | Architect |
 | D-043 | 2026-07-12 | Learning produces reviewable lessons and proposals, not uncontrolled self-modification | User approval remains mandatory for code, prompts, permissions, and safety rules | Architect |
+| D-044 | 2026-07-13 | RuntimeStateMachine is the sole authority for runtime state | Validated transitions prevent UI, face, and services from presenting contradictory activity | Integration |
+| D-045 | 2026-07-13 | State events include previous state, current state, metadata, and UTC timestamp | Consumers can render and audit transitions without reading mutable runtime internals | Integration |
+| D-046 | 2026-07-13 | Face emotion is derived through a state adapter | The existing face stays decoupled from orchestration while reflecting truthful runtime state | Integration |
 
 ---
 
@@ -116,11 +119,15 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** INTEGRATION-001 — Main Application & Pipeline
+**Current Task:** CORE-001 — Assistant Runtime State Machine
 
 **Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
+- `src/app/state_machine.py` — authoritative transition table, validation, interruption, and subscriber delivery
+- `src/app/events.py` — expanded typed states and transition events with previous state and UTC timestamp
+- `src/app/face_state.py` — runtime-state to face-emotion adapter compatible with `NexusFace`
+- `tests/test_state_machine.py` — normal, invalid, interrupted, blocked, recovery, subscriber, and face integration tests
 - `src/app/runtime.py` — event-driven `NexusRuntime` for text and captured-audio requests
 - `src/app/factory.py` — configuration-driven construction of audio, STT, LLM, memory, TTS, and playback services
 - `src/app/events.py` — observable runtime state and event contracts for the future UI
@@ -206,11 +213,11 @@
 
 **New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`, `EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
 
-**INTEGRATION-001 validation:** 126 tests pass. Ruff and mypy are configured in
+**CORE-001 validation:** 144 tests pass. Ruff and mypy are configured in
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
-**Next Task after merge:** CORE-001 — Assistant Runtime State Machine
+**Next Task after merge:** TOOLS-001 — Tool Protocol, Registry & Permissions
 
 ---
 
@@ -456,16 +463,29 @@ class RuntimeServices:
 
 class NexusRuntime:
     def subscribe(self, callback: Callable[[RuntimeEvent], None]) -> None
+    def interrupt(self, message: str = "Interrupted") -> RuntimeEvent
     async def start(self) -> None
     async def stop(self) -> None
     async def handle_text(self, text: str) -> str
     async def handle_audio(self, audio: np.ndarray) -> str
 
 def create_runtime(config: NexusConfig | None = None) -> NexusRuntime
+
+class RuntimeStateMachine:
+    @property
+    def state(self) -> RuntimeState
+    def subscribe(self, callback: Callable[[RuntimeEvent], None]) -> None
+    def can_transition(self, target: RuntimeState) -> bool
+    def transition(self, target: RuntimeState, ...) -> RuntimeEvent
+    def interrupt(self, message: str = "Interrupted") -> RuntimeEvent
+
+def face_emotion_for(state: RuntimeState) -> str
 ```
 
-The runtime emits IDLE, LISTENING, UNDERSTANDING, THINKING, SPEAKING, ERROR, and
-STOPPED events. Optional speech services degrade independently so text interaction remains usable.
+The state machine supports STOPPED, IDLE, LISTENING, UNDERSTANDING, PLANNING, ACTING,
+VERIFYING, SPEAKING, WAITING_CONFIRMATION, BLOCKED, ERROR, and SLEEPING. Every transition is
+validated before mutation and emits previous/current state metadata. Optional speech services
+degrade independently so text interaction remains usable.
 
 ---
 
