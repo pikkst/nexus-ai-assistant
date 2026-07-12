@@ -229,7 +229,21 @@
 9. `UI-008` — unified companion workspace
 10. `ARCH-010` and `OPS-001` — reliable installation and distribution
 
-**New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`, `EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
+**New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TOOLS-002`, `TOOLS-003`,
+`WEB-001`, `CONNECTOR-001`, `CONNECTOR-002`, `CONNECTOR-003`, `CONNECTOR-004`,
+`CONNECTOR-005`, `PLUGIN-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`,
+`EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
+
+**External capability implementation order:**
+
+1. `TASKS-001` — persistent goals and resumable plans
+2. `TOOLS-002` — LLM tool selection through the existing registry
+3. `TOOLS-003` — sandboxed local development work
+4. `WEB-001` — cited web research
+5. `CONNECTOR-001` — credential vault and OAuth foundation
+6. `CONNECTOR-002` and `CONNECTOR-003` — Gmail and Google Calendar
+7. `CONNECTOR-004` and `CONNECTOR-005` — Telegram and LinkedIn-assisted workflows
+8. `PLUGIN-001` — third-party MCP and plugin discovery
 
 **TOOLS-001 validation:** 167 tests pass. Ruff and mypy are configured in
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,

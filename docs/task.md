@@ -590,6 +590,348 @@ so that it can act without hiding risky or destructive operations.
 
 ---
 
+### Task: TOOLS-002 — LLM Tool Selection & Calling
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Expose registered tool schemas to the local LLM and implement a controlled loop that parses tool
+calls, invokes the registry, returns structured results to the model, and prevents unbounded calls.
+
+## User Story
+
+As a Nexus user,
+I need the assistant to select appropriate available tools
+so that natural-language requests can become safe, concrete actions.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Tool descriptors expose validated JSON-compatible argument schemas
+- [ ] **AC-2:** LLM responses can request a tool through a typed structured call
+- [ ] **AC-3:** Requested tools and arguments are validated exclusively by ToolRegistry
+- [ ] **AC-4:** Confirmation-required results pause and resume the tool-calling loop
+- [ ] **AC-5:** Per-request call count, timeout, cancellation, and loop-detection limits are enforced
+- [ ] **AC-6:** Mocked end-to-end tests cover selection, result injection, rejection, and recovery
+
+## Definition of Done
+
+- A natural-language mocked request selects and invokes the expected registered tool
+- The model cannot bypass registry permissions or invent executable tool names
+- PR merged from `feature/llm-tool-calling` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: TOOLS-003 — Local Development Toolset
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Add permissioned local tools for file search, patch-based editing, terminal commands, tests, builds,
+and Git inspection so Nexus can create and maintain software projects inside configured roots.
+
+## User Story
+
+As a Nexus user,
+I need the assistant to inspect, edit, test, and verify local projects
+so that it can perform useful programming work without unrestricted system access.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** File search, text creation, and patch-based editing tools are sandboxed to project roots
+- [ ] **AC-2:** Terminal commands use argument arrays, allowlists, timeouts, output limits, and cancellation
+- [ ] **AC-3:** Test, lint, build, Git status, and Git diff tools return structured evidence
+- [ ] **AC-4:** Local writes require policy approval and destructive commands are denied by default
+- [ ] **AC-5:** Atomic writes and pre-change snapshots support recovery from failed edits
+- [ ] **AC-6:** Tests cover traversal, injection, symlinks, large output, rollback, and missing executables
+
+## Definition of Done
+
+- Nexus can patch a sample project and verify it with tests in a sandbox
+- No tool can write outside the explicitly configured workspace
+- PR merged from `feature/local-development-tools` into `develop`
+
+---
+
+**EST:** 13 SP
+
+---
+
+### Task: WEB-001 — Web Research & Source Management
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Implement permissioned web search, page retrieval, content extraction, source comparison, citation,
+and research-note tools with transparent provenance and bounded downloads.
+
+## User Story
+
+As a Nexus user,
+I need current internet research with visible sources
+so that information gathering is useful, verifiable, and organized.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Search and page-open tools use configurable provider adapters
+- [ ] **AC-2:** Results retain URL, title, publication date, retrieval time, and source type
+- [ ] **AC-3:** Robots, content size, timeout, redirect, and supported-format limits are enforced
+- [ ] **AC-4:** Multiple sources can be compared and cited without fabricating attribution
+- [ ] **AC-5:** Research notes can be saved locally only through permissioned write tools
+- [ ] **AC-6:** Tests use mocked providers and cover unsafe URLs, failures, duplicates, and citations
+
+## Definition of Done
+
+- A mocked research request produces a cited multi-source summary
+- External access is explicit, auditable, cancellable, and provider-independent
+- PR merged from `feature/web-research-tools` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: CONNECTOR-001 — Credential Vault & OAuth Foundation
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Build the shared authentication foundation for external connectors using OAuth where available and
+OS-backed secret storage. Tokens must never enter prompts, ordinary configuration, or audit logs.
+
+## User Story
+
+As a Nexus user,
+I need external accounts connected securely and revocably
+so that Nexus can use approved services without exposing credentials.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Provider-neutral account, scope, token-state, and consent models are defined
+- [ ] **AC-2:** Secrets use Windows Credential Manager or another supported OS keyring
+- [ ] **AC-3:** OAuth authorization, refresh, expiry, revocation, and reconnect flows are supported
+- [ ] **AC-4:** Connector scopes are minimized and visible to the user before authorization
+- [ ] **AC-5:** Tokens are redacted from logs, exceptions, tool arguments, memory, and LLM context
+- [ ] **AC-6:** Tests cover refresh, revocation, missing keyring, redaction, and concurrent access
+
+## Definition of Done
+
+- A mocked OAuth provider can connect, refresh, revoke, and reconnect safely
+- Security review confirms that credentials are never persisted as plain JSON
+- PR merged from `feature/connector-credential-vault` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: CONNECTOR-002 — Gmail Tools
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Add Gmail tools for searching and reading messages, composing drafts, replying, labeling, archiving,
+and sending mail through the credential vault and permission system.
+
+## User Story
+
+As a Nexus user,
+I need help organizing and writing email
+so that routine correspondence is faster while I control every external action.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Search, read, thread-summary, and attachment-metadata tools are read-only
+- [ ] **AC-2:** Draft creation and editing are distinct from message sending
+- [ ] **AC-3:** Send, reply, label, archive, and delete actions use appropriate risk and confirmation levels
+- [ ] **AC-4:** Recipients, subject, body, attachment limits, and message identifiers are validated
+- [ ] **AC-5:** Message bodies and addresses are not copied into audit logs or long-term memory by default
+- [ ] **AC-6:** Mocked Gmail API tests cover pagination, drafts, confirmation, failures, and duplicate sends
+
+## Definition of Done
+
+- Nexus can find an email, prepare a reply draft, and send only after explicit confirmation
+- Required Gmail scopes and account-disconnect instructions are documented
+- PR merged from `feature/gmail-tools` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: CONNECTOR-003 — Google Calendar Tools
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Add Google Calendar tools for listing schedules, finding free time, preparing event drafts, and
+creating, updating, or deleting confirmed events.
+
+## User Story
+
+As a Nexus user,
+I need the assistant to understand and manage my calendar
+so that scheduling becomes faster without accidental invitations or deletions.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Calendar, event, attendee, recurrence, timezone, and free/busy models are typed
+- [ ] **AC-2:** Listing events and finding free time are read-only operations
+- [ ] **AC-3:** Event drafts show timezone, attendees, reminders, and conflicts before creation
+- [ ] **AC-4:** Create, update, invite, and delete operations require risk-appropriate confirmation
+- [ ] **AC-5:** Idempotency prevents duplicate events after retry or resumed tasks
+- [ ] **AC-6:** Mocked API tests cover pagination, DST, conflicts, recurrence, cancellation, and errors
+
+## Definition of Done
+
+- Nexus can propose a conflict-free event and create it only after user confirmation
+- Calendar scopes, privacy behavior, and account revocation are documented
+- PR merged from `feature/google-calendar-tools` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: CONNECTOR-004 — Telegram Tools
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Implement Telegram messaging through a provider abstraction, beginning with the official Bot API.
+Keep bot identity separate from any future user-account integration.
+
+## User Story
+
+As a Nexus user,
+I need approved Telegram conversations and notifications available as tools
+so that Nexus can assist with messaging without impersonating my personal account.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Bot identity, chat, message, attachment, and update models are typed
+- [ ] **AC-2:** Listing authorized chats and reading received bot updates are read-only
+- [ ] **AC-3:** Drafting is separated from sending messages and attachments
+- [ ] **AC-4:** Sending requires confirmation and an allowlisted chat or recipient
+- [ ] **AC-5:** Rate limits, retries, duplicate-update handling, and attachment limits are enforced
+- [ ] **AC-6:** Mocked Bot API tests cover authorization, polling, sending, failures, and redaction
+
+## Definition of Done
+
+- Nexus can read a mocked bot update and send a confirmed response to an authorized chat
+- Personal-account automation remains explicitly out of scope until separately reviewed
+- PR merged from `feature/telegram-tools` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
+### Task: CONNECTOR-005 — LinkedIn Assisted Workflow
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Provide a terms-aware LinkedIn assistance workflow focused on profile analysis, post and message
+drafting, and user-reviewed handoff. Automated account actions require an approved official API.
+
+## User Story
+
+As a Nexus user,
+I need help improving LinkedIn content and correspondence
+so that I can work efficiently without unsafe automation or account-policy violations.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Profile, post, message, and company content can be imported or entered for local analysis
+- [ ] **AC-2:** Nexus can create editable post, profile, and response drafts without publishing them
+- [ ] **AC-3:** Official API capability and granted scopes are detected before offering account actions
+- [ ] **AC-4:** Scraping, mass outreach, and hidden browser automation are denied by default
+- [ ] **AC-5:** Any supported publish or message action requires preview and explicit confirmation
+- [ ] **AC-6:** Tests cover draft workflows, unsupported actions, scope denial, and sensitive data handling
+
+## Definition of Done
+
+- Local draft and profile-improvement workflows work without LinkedIn credentials
+- Automated capabilities are limited to officially supported and explicitly authorized APIs
+- PR merged from `feature/linkedin-assisted-workflow` into `develop`
+
+---
+
+**EST:** 5 SP
+
+---
+
+### Task: PLUGIN-001 — MCP & Plugin Tool Discovery
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Add controlled discovery and loading of tools from installed local plugins and configured MCP
+servers, adapting them into the same registry, risk, permission, and audit contracts.
+
+## User Story
+
+As a Nexus maintainer,
+I need capabilities to be added without modifying the core application
+so that service integrations can evolve as isolated, reviewable packages.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Plugin manifests define identity, version, tool schemas, permissions, and entry point
+- [ ] **AC-2:** MCP tool schemas are validated and adapted into ToolDescriptor and ToolRequest contracts
+- [ ] **AC-3:** Only explicitly installed and enabled providers are loaded
+- [ ] **AC-4:** Provider tools cannot bypass registry risk policy, timeout, cancellation, or audit
+- [ ] **AC-5:** Version conflicts, unavailable servers, duplicate names, and malformed schemas fail safely
+- [ ] **AC-6:** Tests cover discovery, enable/disable, isolation, collisions, failures, and uninstall behavior
+
+## Definition of Done
+
+- A mocked local plugin and MCP server expose tools through the normal Nexus registry
+- Disabling or removing a provider immediately removes its tools without affecting core tools
+- PR merged from `feature/plugin-mcp-discovery` into `develop`
+
+---
+
+**EST:** 13 SP
+
+---
+
 ### Task: TASKS-001 — Goals, Plans & Resumable Tasks
 
 **Status:** 📋 BACKLOG
