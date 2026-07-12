@@ -1,6 +1,6 @@
 # Nexus Local AI Assistant — Memory & Context
 
-> **Version:** 1.2.0  
+> **Version:** 1.3.0
 > **Purpose:** Persistent project memory — what has been done, what was decided, what problems were encountered, and what every agent must know before starting work.
 
 ---
@@ -25,6 +25,12 @@
 | User Interface | 📋 Planned |
 | Main Pipeline | 📋 Planned |
 | Packaging | 📋 Planned |
+| Runtime State Machine | 📋 Planned (CORE-001) |
+| Tool Execution & Permissions | 📋 Planned (TOOLS-001) |
+| Goals & Resumable Tasks | 📋 Planned (TASKS-001) |
+| Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
+| Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
+| Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
 
 **Legend:** ✅ Done | ⏳ In Progress | 📋 Planned | ❌ Not Started | 🚫 Blocked
 
@@ -47,6 +53,11 @@
 | D-024 | 2026-07-12 | Default TTS voice: en_US-lessac-medium | Good Estonian/English coverage in Piper | Backend |
 | D-025 | 2026-07-12 | Default STT language: et | Primary user language is Estonian | Backend |
 | D-026 | 2026-07-12 | PyAudio device enumeration in settings UI | Lets user pick mic/speaker without editing config | Backend |
+| D-027 | 2026-07-12 | Build one authoritative Nexus runtime before adding broad autonomy | Existing services need a coherent, testable lifecycle before they can act reliably | Architect |
+| D-028 | 2026-07-12 | Separate working, episodic, semantic, preference, and procedural memory | Different information requires different retrieval, confidence, privacy, and retention rules | Architect |
+| D-029 | 2026-07-12 | Tool use is typed, permissioned, auditable, and verified | Useful autonomy must remain transparent, bounded, and evidence-based | Architect |
+| D-030 | 2026-07-12 | Persona affects expression, not truth or safety standards | Playfulness must not reduce factual reliability or bypass user control | Architect |
+| D-031 | 2026-07-12 | Learning produces reviewable lessons and proposals, not uncontrolled self-modification | User approval remains mandatory for code, prompts, permissions, and safety rules | Architect |
 
 ---
 
@@ -113,7 +124,38 @@
 - Graceful degradation when no speakers are available
 - Audio device enumeration via PyAudio with "Default" fallback
 
-**Next Task:** ARCH-003 — Camera / Vision Service
+**Architecture analysis — companion and workhorse direction:**
+
+- The repository has working service-level foundations, but no authoritative orchestration layer yet.
+- Implement `INTEGRATION-001` and `CORE-001` before broad UI polish, semantic memory, or autonomous tools.
+- The preferred lifecycle is `IDLE → LISTENING → UNDERSTANDING → PLANNING → ACTING → VERIFYING → SPEAKING → IDLE`, with explicit waiting, blocked, error, and sleeping states.
+- The animated face must reflect actual runtime state; it must not independently imply that work succeeded.
+- Serious work requires typed goals, resumable plans, permissioned tools, structured results, and evidence-backed completion.
+- Companion behavior should use configurable companion, balanced, and focused modes plus bounded playfulness and proactivity.
+- Long-term memory must be selective and user-controlled. Sensitive information needs explicit policy and all memories need provenance.
+- Safe self-development means learning from verified outcomes and feedback. Nexus may propose changes, but must not silently rewrite source code, core prompts, permissions, or safety policy.
+- Documentation currently describes ChromaDB while the implementation uses JSON token-cosine search; `MEM-002` must either reconcile the documentation or introduce a backend-neutral hybrid retrieval layer.
+- `pyproject.toml` currently discovers `nexus*` packages, while modules live directly below `src/`; `ARCH-010` tracks the required package-layout repair.
+- The first useful vertical slice is text input → relevant memory → LLM → response, followed by microphone → STT → the same cycle → TTS, all driven by runtime state and covered by an end-to-end smoke test.
+
+**Recommended implementation order:**
+
+1. `INTEGRATION-001` — minimal end-to-end runtime
+2. `CORE-001` — authoritative states and events
+3. `TOOLS-001` — typed tools and permissions
+4. `TASKS-001` — goals, plans, interruption, and resume
+5. `MEM-002` and `MEM-003` — structured memory and user control
+6. `PERSONA-001` — bounded companion behavior
+7. `EVAL-001` — verification and feedback
+8. `LEARN-001` — safe reflection and learning
+9. `UI-008` — unified companion workspace
+10. `ARCH-010` and `OPS-001` — reliable installation and distribution
+
+**New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`, `EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
+
+**Validation note:** 107 tests passed in the managed environment. Fourteen tests using pytest temporary directories could not start because the environment denied creation of both its default temp directory and `C:\tmp\nexus-pytest`; no application assertion failed in those cases.
+
+**Next Task:** INTEGRATION-001 — Main Application & Pipeline, followed by CORE-001
 
 ---
 
