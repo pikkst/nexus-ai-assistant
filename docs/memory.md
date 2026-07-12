@@ -29,7 +29,8 @@
 | Runtime State Machine | ✅ Complete (CORE-001) |
 | Tool Execution & Permissions | ✅ Complete (TOOLS-001) |
 | Goals & Resumable Tasks | ✅ Complete (TASKS-001) |
-| LLM Tool Selection & Calling | ⏳ In Progress (TOOLS-002) |
+| LLM Tool Selection & Calling | 🔀 Draft PR #18 (TOOLS-002) |
+| Local Development Toolset | ⏳ In Progress (TOOLS-003) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
 | Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
 | Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
@@ -85,6 +86,8 @@
 | D-054 | 2026-07-13 | Successful verified steps require machine evidence or explicit user confirmation | LLM assertions alone cannot mark real work complete | Integration |
 | D-055 | 2026-07-13 | Tool calls use Ollama's native function schema and role=tool result messages | The local backend receives its documented protocol without an invented intermediary format | Integration |
 | D-056 | 2026-07-13 | All model-requested calls execute exclusively through ToolRegistry | Model output cannot bypass schema validation, risk policy, timeout, cancellation, or audit | Integration |
+| D-057 | 2026-07-13 | Local development commands are shell-free and explicitly allowlisted | Argument injection cannot become shell execution and unapproved programs remain unavailable | Security |
+| D-058 | 2026-07-13 | File edits are atomic and capture workspace-local pre-change snapshots | Interrupted or incorrect edits can be safely restored without writing outside the project root | Data |
 | D-057 | 2026-07-13 | Agent loops pause on confirmation and enforce call, repetition, timeout, and parallel-call guards | Human control and bounded execution take priority over autonomous continuation | Integration |
 
 ---
@@ -132,7 +135,9 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** TOOLS-002 — LLM Tool Selection & Calling
+**Current Task:** TOOLS-003 — Local Development Toolset
+
+**TOOLS-003 validation:** 197 tests pass. Ruff is configured but is not installed in the active environment.
 
 **Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 

@@ -630,7 +630,7 @@ so that natural-language requests can become safe, concrete actions.
 
 ### Task: TOOLS-003 — Local Development Toolset
 
-**Status:** 📋 BACKLOG
+**Status:** 🔀 IN REVIEW
 
 ---
 
@@ -647,12 +647,12 @@ so that it can perform useful programming work without unrestricted system acces
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** File search, text creation, and patch-based editing tools are sandboxed to project roots
-- [ ] **AC-2:** Terminal commands use argument arrays, allowlists, timeouts, output limits, and cancellation
-- [ ] **AC-3:** Test, lint, build, Git status, and Git diff tools return structured evidence
-- [ ] **AC-4:** Local writes require policy approval and destructive commands are denied by default
-- [ ] **AC-5:** Atomic writes and pre-change snapshots support recovery from failed edits
-- [ ] **AC-6:** Tests cover traversal, injection, symlinks, large output, rollback, and missing executables
+- [x] **AC-1:** File search, text creation, and patch-based editing tools are sandboxed to project roots
+- [x] **AC-2:** Terminal commands use argument arrays, allowlists, timeouts, output limits, and cancellation
+- [x] **AC-3:** Test, lint, build, Git status, and Git diff tools return structured evidence
+- [x] **AC-4:** Local writes require policy approval and destructive commands are denied by default
+- [x] **AC-5:** Atomic writes and pre-change snapshots support recovery from failed edits
+- [x] **AC-6:** Tests cover traversal, injection, symlinks, large output, rollback, and missing executables
 
 ## Definition of Done
 
