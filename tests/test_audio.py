@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -184,3 +185,126 @@ class TestAudioCapture:
         assert config.sample_rate == 48000
         assert config.chunk_size == 2048
         assert config.device_index == 1
+
+
+# ------------------------------------------------------------------
+# AudioPlayback Tests
+# ------------------------------------------------------------------
+
+class TestAudioPlayback:
+    """Tests for AudioPlayback with mocked PyAudio."""
+
+    @pytest.mark.asyncio
+    async def test_importable(self) -> None:
+        from src.audio.playback import AudioPlayback, AudioPlaybackConfig
+        config = AudioPlaybackConfig()
+        playback = AudioPlayback(config)
+        assert not playback.is_active
+
+    @pytest.mark.asyncio
+    async def test_start_without_speakers(self) -> None:
+        """Should log warning and return silently if no speakers."""
+        from src.audio.playback import AudioPlayback
+
+        playback = AudioPlayback()
+        with patch("pyaudio.PyAudio") as mock_pa:
+            instance = mock_pa.return_value
+            instance.get_default_output_device_info.side_effect = OSError("No speakers")
+            await playback.start()
+            assert not playback.is_active
+
+    @pytest.mark.asyncio
+    async def test_context_manager(self) -> None:
+        """Async context manager should enter and exit cleanly."""
+        from src.audio.playback import AudioPlayback
+
+        async with AudioPlayback() as playback:
+            assert playback is not None
+
+    @pytest.mark.asyncio
+    async def test_play_raw_pcm(self) -> None:
+        """Should queue audio data for playback."""
+        from src.audio.playback import AudioPlayback
+
+        playback = AudioPlayback()
+        with patch("pyaudio.PyAudio") as mock_pa:
+            instance = mock_pa.return_value
+            instance.get_default_output_device_info.return_value = {"index": 0}
+            mock_stream = instance.open.return_value
+            await playback.start()
+            audio = np.ones(4800, dtype=np.float32) * 0.5
+            await playback.play(audio, sample_rate=24000)
+            assert playback.is_active
+            await playback.stop()
+
+    @pytest.mark.asyncio
+    async def test_set_volume(self) -> None:
+        """Volume should be settable within valid range."""
+        from src.audio.playback import AudioPlayback
+
+        playback = AudioPlayback()
+        await playback.set_volume(0.5)
+        assert playback._volume == 0.5
+
+    @pytest.mark.asyncio
+    async def test_set_volume_invalid(self) -> None:
+        """Volume outside 0.0-1.0 should raise ValueError."""
+        from src.audio.playback import AudioPlayback
+
+        playback = AudioPlayback()
+        with pytest.raises(ValueError, match="Volume"):
+            await playback.set_volume(1.5)
+        with pytest.raises(ValueError, match="Volume"):
+            await playback.set_volume(-0.1)
+
+    @pytest.mark.asyncio
+    async def test_play_file_wav(self, tmp_path: Path) -> None:
+        """Should play a WAV file."""
+        import wave
+
+        from src.audio.playback import AudioPlayback
+
+        playback = AudioPlayback()
+        wav_path = tmp_path / "test.wav"
+        with wave.open(str(wav_path), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(24000)
+            wf.writeframes(np.zeros(4800, dtype=np.int16).tobytes())
+
+        with patch("pyaudio.PyAudio") as mock_pa:
+            instance = mock_pa.return_value
+            instance.get_default_output_device_info.return_value = {"index": 0}
+            await playback.start()
+            await playback.play_file(wav_path)
+            assert playback.is_active
+            await playback.stop()
+
+    @pytest.mark.asyncio
+    async def test_play_file_not_found(self) -> None:
+        """Should raise FileNotFoundError for missing file."""
+        from src.audio.playback import AudioPlayback
+
+        playback = AudioPlayback()
+        with pytest.raises(FileNotFoundError):
+            await playback.play_file(Path("nonexistent.wav"))
+
+    @pytest.mark.asyncio
+    async def test_play_file_unsupported_format(self, tmp_path: Path) -> None:
+        """Should raise ValueError for unsupported format."""
+        from src.audio.playback import AudioPlayback
+
+        playback = AudioPlayback()
+        bad_path = tmp_path / "test.xyz"
+        bad_path.write_text("dummy")
+        with pytest.raises(ValueError, match="Unsupported audio format"):
+            await playback.play_file(bad_path)
+
+    def test_config_defaults(self) -> None:
+        from src.audio.playback import AudioPlaybackConfig
+
+        config = AudioPlaybackConfig()
+        assert config.sample_rate == 24000
+        assert config.chunk_size == 1024
+        assert config.channels == 1
+        assert config.dtype == "float32"

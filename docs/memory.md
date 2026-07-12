@@ -13,7 +13,7 @@
 | Project Scaffold | ✅ Complete |
 | Git Repository | ✅ Initialized on `develop` |
 | Audio Capture | ✅ Complete (capture.py, vad.py, 17 tests) |
-| Audio Playback | 📋 Planned |
+| Audio Playback | ✅ Complete (playback.py, tests added) |
 | VAD | ✅ Built into capture pipeline |
 | STT | 📋 Planned |
 | TTS | 📋 Planned |
@@ -38,6 +38,9 @@
 | D-016 | 2026-07-12 | webrtcvad for VAD | Lightweight, no ML model needed, fast | Backend |
 | D-017 | 2026-07-12 | PyAudio callback mode | Non-blocking, native thread safety | Backend |
 | D-018 | 2026-07-12 | VAD state machine (SILENCE→SPEECH→ENDING) | Prevents false starts, handles trailing silence | Backend |
+| D-019 | 2026-07-12 | PyAudio write-thread for playback | Non-blocking, simple output streaming | Backend |
+| D-020 | 2026-07-12 | soundfile for WAV, pydub for MP3 | Covers required formats with minimal deps | Backend |
+| D-021 | 2026-07-12 | Volume as gain factor on float32 audio | Consistent with capture pipeline dtype | Backend |
 
 ---
 
@@ -84,22 +87,23 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** ARCH-002 — Audio Playback Service (next in queue)
+**Current Task:** ARCH-003 — Camera / Vision Service (next in queue)
 
-**Most recently completed:** ARCH-001 — Audio Capture Service
+**Most recently completed:** ARCH-002 — Audio Playback Service
 
 **What was built:**
-- `src/audio/vad.py` — `VoiceActivityDetector` with 3-state machine, WebRTCVAD wrapper
-- `src/audio/capture.py` — `AudioCapture` with PyAudio callback streaming, VAD integration, speech buffer
-- `tests/test_audio.py` — 17 unit tests all passing
+- `src/audio/playback.py` — `AudioPlayback` with PyAudio write-thread, queue, volume, file support
+- `tests/test_audio.py` — 9 new playback tests added (28 total passing)
+- `requirements.txt` — added `pydub` for MP3 support
 
 **Key decisions:**
-- PyAudio callback mode for non-blocking capture
-- VAD state machine with ENDING grace period for natural speech
-- Float32 audio format throughout the pipeline
-- Graceful degradation when no mic is available
+- PyAudio write-thread for non-blocking playback
+- soundfile for WAV, pydub for MP3, raw PCM via numpy
+- Volume applied as gain factor on float32 audio
+- Graceful degradation when no speakers are available
+- Simple linear interpolation resampling for mismatched sample rates
 
-**Next Task:** ARCH-002 — Audio Playback Service
+**Next Task:** ARCH-003 — Camera / Vision Service
 
 ---
 
@@ -152,6 +156,29 @@ class VoiceActivityDetector:
 ### Inter-Module Data Types
 
 Same as before, with additional `AudioCaptureConfig` and `VadConfig` dataclasses.
+
+### Audio Playback API
+
+```python
+# src/audio/playback.py
+class AudioPlaybackConfig:
+    sample_rate: int = 24000
+    chunk_size: int = 1024
+    device_index: int | None = None
+    channels: int = 1
+    dtype: str = "float32"
+    max_queue_size: int = 100
+
+class AudioPlayback:
+    async def start(self) -> None
+    async def stop(self) -> None
+    async def play(self, audio: np.ndarray, sample_rate: int | None = None) -> None
+    async def play_file(self, path: Path) -> None
+    async def set_volume(self, volume: float) -> None
+
+    @property
+    def is_active(self) -> bool
+```
 
 ---
 
