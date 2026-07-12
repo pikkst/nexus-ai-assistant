@@ -255,6 +255,10 @@ class LabelTool:
         _validate_message_id(arguments.get("message_id"), "message_id")
         add = arguments.get("add", ())
         remove = arguments.get("remove", ())
+        if not isinstance(add, (list, tuple)):
+            raise ToolValidationError("add must be an array of label names")
+        if not isinstance(remove, (list, tuple)):
+            raise ToolValidationError("remove must be an array of label names")
         if not add and not remove:
             raise ToolValidationError("at least one label must be added or removed")
         for label in add:
