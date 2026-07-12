@@ -200,9 +200,11 @@ so that I can respond to the user with speech.
 
 ### Task: ARCH-009 — UI Settings Panel
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 ---
+
+
 
 ## Task Description
 
@@ -216,11 +218,11 @@ so that I can personalize my experience.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Settings window with audio section (volume slider, sample rate, device selection)
-- [ ] **AC-2:** TTS voice/tone selection
-- [ ] **AC-3:** Language selection (et/en)
-- [ ] **AC-4:** Persist settings to `~/.nexus/config.json`
-- [ ] **AC-5:** Load settings on startup
+- [x] **AC-1:** Settings window with audio section (volume slider, sample rate, device selection)
+- [x] **AC-2:** TTS voice/tone selection
+- [x] **AC-3:** Language selection (et/en)
+- [x] **AC-4:** Persist settings to `~/.nexus/config.json`
+- [x] **AC-5:** Load settings on startup
 
 ## Definition of Done
 
@@ -231,8 +233,8 @@ so that I can personalize my experience.
 
 **EST:** 3 SP
 
-**RT:**
-**QA:**
+**RT:** 2026-07-12
+**QA:** 2026-07-12
 
 ---
 
@@ -245,6 +247,7 @@ so that I can personalize my experience.
 | UI-FACE-001 | Looi-Style Animated Face Module | 2026-07-12 | Documentation Agent |
 | ARCH-001 | Audio Capture Service | 2026-07-12 | Backend Agent |
 | ARCH-002 | Audio Playback Service | 2026-07-12 | Backend Agent |
+| ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
 
 ---
 

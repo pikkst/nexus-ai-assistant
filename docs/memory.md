@@ -52,7 +52,11 @@
 | D-023 | 2026-07-12 | CustomTkinter for settings UI | Native Windows look, fast to implement | Backend |
 | D-024 | 2026-07-12 | Default TTS voice: en_US-lessac-medium | Good Estonian/English coverage in Piper | Backend |
 | D-025 | 2026-07-12 | Default STT language: et | Primary user language is Estonian | Backend |
+<<<<<<< HEAD
 >>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
+=======
+| D-026 | 2026-07-12 | PyAudio device enumeration in settings UI | Lets user pick mic/speaker without editing config | Backend |
+>>>>>>> 08230c8 (feat(ui): add audio device selection to settings panel)
 
 ---
 
@@ -99,41 +103,25 @@
 
 ## 5. Current Sprint Context
 
-<<<<<<< HEAD
 **Current Task:** ARCH-003 — Camera / Vision Service (next in queue)
 
-**Most recently completed:** ARCH-002 — Audio Playback Service
-
-**What was built:**
-- `src/audio/playback.py` — `AudioPlayback` with PyAudio write-thread, queue, volume, file support
-- `tests/test_audio.py` — 9 new playback tests added (28 total passing)
-- `requirements.txt` — added `pydub` for MP3 support
-=======
-**Current Task:** ARCH-009 — UI Settings Panel
-
-**Most recently completed:** ARCH-002 — Audio Playback Service (PR #1 open)
+**Most recently completed:** ARCH-002 — Audio Playback Service, ARCH-009 — UI Settings Panel
 
 **What was built:**
 - `src/audio/playback.py` — `AudioPlayback` with PyAudio write-thread, queue, volume, file support
 - `src/config/settings.py` — `NexusConfig` with JSON persistence
-- `src/ui/settings.py` — CustomTkinter settings window (volume, sample rate, voice, speed, language, theme)
+- `src/ui/settings.py` — CustomTkinter settings window (volume, sample rate, input/output device selection, voice, speed, language, theme)
 - `tests/test_settings.py` — 7 tests for config load/save/roundtrip
 - `tests/test_audio.py` — playback tests added (24 total passing)
->>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 
 **Key decisions:**
 - PyAudio write-thread for non-blocking playback
 - soundfile for WAV, pydub for MP3, raw PCM via numpy
-<<<<<<< HEAD
-- Volume applied as gain factor on float32 audio
-- Graceful degradation when no speakers are available
-- Simple linear interpolation resampling for mismatched sample rates
-=======
 - CustomTkinter for settings panel (native Windows look, simple API)
 - Config persisted to `~/.nexus/config.json`
 - Volume applied as gain factor on float32 audio
 - Graceful degradation when no speakers are available
->>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
+- Audio device enumeration via PyAudio with "Default" fallback
 
 **Next Task:** ARCH-003 — Camera / Vision Service
 
