@@ -20,9 +20,9 @@ from urllib.parse import urlparse, parse_qs
 _script_dir = pathlib.Path(__file__).resolve().parent
 _src_dir = _script_dir.parent  # src/
 if str(_src_dir) not in sys.path:
-    sys.path.insert(0, str(_src_dir.parent))  # project root so "from src.ui.face" works
+    sys.path.insert(0, str(_src_dir))
 
-from src.ui.face import NexusFace, Emotion
+from ui.face import NexusFace, Emotion
 
 HERE = _script_dir
 face_instance = NexusFace()
