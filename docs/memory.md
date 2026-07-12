@@ -13,12 +13,8 @@
 | Project Scaffold | ✅ Complete |
 | Git Repository | ✅ Initialized on `develop` |
 | Audio Capture | ✅ Complete (capture.py, vad.py, 17 tests) |
-<<<<<<< HEAD
 | Audio Playback | ✅ Complete (playback.py, tests added) |
-=======
-| Audio Playback | ✅ Complete (playback.py, 9 tests) — PR #1 open |
 | Settings / Config | ✅ Complete (NexusConfig, UI panel, 7 tests) |
->>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 | VAD | ✅ Built into capture pipeline |
 | STT | 📋 Planned |
 | TTS | 📋 Planned |
@@ -46,17 +42,11 @@
 | D-019 | 2026-07-12 | PyAudio write-thread for playback | Non-blocking, simple output streaming | Backend |
 | D-020 | 2026-07-12 | soundfile for WAV, pydub for MP3 | Covers required formats with minimal deps | Backend |
 | D-021 | 2026-07-12 | Volume as gain factor on float32 audio | Consistent with capture pipeline dtype | Backend |
-<<<<<<< HEAD
-=======
 | D-022 | 2026-07-12 | NexusConfig persisted to JSON | Simple, human-editable, no extra runtime deps | Backend |
 | D-023 | 2026-07-12 | CustomTkinter for settings UI | Native Windows look, fast to implement | Backend |
 | D-024 | 2026-07-12 | Default TTS voice: en_US-lessac-medium | Good Estonian/English coverage in Piper | Backend |
 | D-025 | 2026-07-12 | Default STT language: et | Primary user language is Estonian | Backend |
-<<<<<<< HEAD
->>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
-=======
 | D-026 | 2026-07-12 | PyAudio device enumeration in settings UI | Lets user pick mic/speaker without editing config | Backend |
->>>>>>> 08230c8 (feat(ui): add audio device selection to settings panel)
 
 ---
 
