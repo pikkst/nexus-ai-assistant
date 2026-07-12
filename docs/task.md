@@ -934,7 +934,7 @@ so that service integrations can evolve as isolated, reviewable packages.
 
 ### Task: TASKS-001 — Goals, Plans & Resumable Tasks
 
-**Status:** 📋 BACKLOG
+**Status:** ⏳ IN PROGRESS
 
 ---
 
@@ -951,12 +951,12 @@ so that I can trust progress and continue work across sessions.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Typed goal, plan step, dependency, result, blocker, and status models
-- [ ] **AC-2:** Plans support pending, active, waiting, blocked, failed, and completed states
-- [ ] **AC-3:** Task state persists locally and can be resumed after restart
-- [ ] **AC-4:** User can inspect, pause, cancel, or amend a plan
-- [ ] **AC-5:** Completion requires evidence or explicit verification, not only an LLM claim
-- [ ] **AC-6:** Tests cover interruption, recovery, cancellation, and blocked tasks
+- [x] **AC-1:** Typed goal, plan step, dependency, result, blocker, and status models
+- [x] **AC-2:** Plans support pending, active, waiting, blocked, failed, and completed states
+- [x] **AC-3:** Task state persists locally and can be resumed after restart
+- [x] **AC-4:** User can inspect, pause, cancel, or amend a plan
+- [x] **AC-5:** Completion requires evidence or explicit verification, not only an LLM claim
+- [x] **AC-6:** Tests cover interruption, recovery, cancellation, and blocked tasks
 
 ## Definition of Done
 

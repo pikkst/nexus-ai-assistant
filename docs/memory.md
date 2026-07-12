@@ -28,7 +28,7 @@
 | Packaging | 📋 Planned |
 | Runtime State Machine | ⏳ In Progress (CORE-001) |
 | Tool Execution & Permissions | ⏳ In Progress (TOOLS-001) |
-| Goals & Resumable Tasks | 📋 Planned (TASKS-001) |
+| Goals & Resumable Tasks | ⏳ In Progress (TASKS-001) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
 | Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
 | Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
@@ -79,6 +79,9 @@
 | D-049 | 2026-07-13 | Every tool declares one of four explicit risk levels | Read-only, local-write, external, and destructive actions can follow different confirmation policy | Integration |
 | D-050 | 2026-07-13 | ToolRegistry returns structured failures while propagating cancellation | Callers can recover from validation, permission, timeout, and execution errors without hiding user cancellation | Integration |
 | D-051 | 2026-07-13 | Tool audit stores redacted inputs and status but never tool output | Local accountability is preserved without copying file contents or secrets into logs | Integration |
+| D-052 | 2026-07-13 | Goals and plan steps persist as versioned atomic JSON | Task state remains local, transparent, restartable, and consistent with existing storage patterns | Integration |
+| D-053 | 2026-07-13 | Active goals and steps recover as paused after process restart | Nexus never assumes interrupted work continued or completed while the process was offline | Integration |
+| D-054 | 2026-07-13 | Successful verified steps require machine evidence or explicit user confirmation | LLM assertions alone cannot mark real work complete | Integration |
 
 ---
 
@@ -125,11 +128,18 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** TOOLS-001 — Tool Protocol, Registry & Permissions
+**Current Task:** TASKS-001 — Goals, Plans & Resumable Tasks
 
 **Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
+- `src/tasks/models.py` — typed goals, plan steps, dependencies, results, evidence, blockers, events, and statuses
+- `src/tasks/store.py` and `src/tasks/codec.py` — atomic versioned JSON persistence and full model round-trip
+- `src/tasks/operations.py` — validated start, pause, resume, cancel, block, resolve, fail, and complete transitions
+- `src/tasks/manager.py` and `src/tasks/base.py` — inspectable, amendable, event-emitting persistent task manager
+- `src/tasks/factory.py` — standard local task-manager construction
+- `tests/test_tasks_manager.py` and `tests/test_tasks_persistence.py` — lifecycle, evidence, dependency, interruption, blocker, immutability, and restart tests
+- `src/config/settings.py` — persisted task storage path
 - `src/tools/models.py` — typed tool, request, result, descriptor, risk, and error contracts
 - `src/tools/permissions.py` — configurable allow, confirm, and deny decisions by risk level
 - `src/tools/registry.py` — discovery, validation, timeout, cancellation, invocation, and audit flow
@@ -245,11 +255,11 @@
 7. `CONNECTOR-004` and `CONNECTOR-005` — Telegram and LinkedIn-assisted workflows
 8. `PLUGIN-001` — third-party MCP and plugin discovery
 
-**TOOLS-001 validation:** 167 tests pass. Ruff and mypy are configured in
+**TASKS-001 validation:** 178 tests pass. Ruff and mypy are configured in
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
-**Next Task after merge:** TASKS-001 — Goals, Plans & Resumable Tasks
+**Next Task after merge:** TOOLS-002 — LLM Tool Selection & Calling
 
 ---
 
@@ -545,6 +555,33 @@ Built-in tools are `filesystem.list_directory`, `filesystem.read_text`, and `pro
 Resolved paths must remain within the configured project root. Local-write, external, and
 destructive tools require confirmation by default. Every attempted invocation creates a redacted
 JSONL audit entry, including rejected, failed, timed-out, and cancelled requests.
+
+---
+
+### Goal & Task Manager API
+
+```python
+class TaskManager:
+    def create_goal(self, objective: str) -> Goal
+    def get_goal(self, goal_id: str) -> Goal
+    def list_goals(self) -> tuple[Goal, ...]
+    def add_step(self, goal_id: str, title: str, ...) -> PlanStep
+    def amend_step(self, goal_id: str, step_id: str, ...) -> PlanStep
+    def start_goal(self, goal_id: str) -> None
+    def start_step(self, goal_id: str, step_id: str) -> None
+    def pause_goal(self, goal_id: str) -> None
+    def resume_goal(self, goal_id: str) -> None
+    def cancel_goal(self, goal_id: str) -> None
+    def block_step(self, goal_id: str, step_id: str, reason: str, ...) -> None
+    def resolve_blocker(self, goal_id: str, step_id: str) -> None
+    def complete_step(self, goal_id: str, step_id: str, summary: str, evidence=()) -> None
+    def fail_step(self, goal_id: str, step_id: str, summary: str) -> None
+    def complete_goal(self, goal_id: str) -> None
+```
+
+Returned goals are deep copies so callers cannot mutate persisted manager state. After restart,
+previously active work becomes paused. Dependency checks gate step start, and verified evidence or a
+verified user-confirmation artifact gates successful step completion.
 
 ---
 
