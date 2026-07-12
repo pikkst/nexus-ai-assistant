@@ -19,7 +19,13 @@ from .models import (
 )
 from .permissions import PermissionDecision, PermissionPolicy
 from .registry import ToolRegistry
-from .web_factory import create_web_research_registry
+from .gmail_factory import create_gmail_registry
+from .gmail_models import AttachmentMetadata, GmailDraft, GmailMessage, GmailProvider, GmailThread
+from .gmail_tools import (
+    ArchiveTool, AttachmentMetadataTool, CreateDraftTool, DeleteTool, LabelTool,
+    ReadMessageTool, ReplyTool, SearchMessagesTool, SendDraftTool, ThreadSummaryTool,
+    UpdateDraftTool,
+)
 from .web_models import PageProvider, SearchProvider, SourceType, WebPage, WebSource
 from .web_tools import CompareSourcesTool, OpenPageTool, SaveResearchNoteTool, WebSearchTool
 
@@ -34,4 +40,8 @@ __all__ = [
     "CompareSourcesTool", "OpenPageTool", "PageProvider", "SaveResearchNoteTool",
     "SearchProvider", "SourceType", "WebPage", "WebSearchTool", "WebSource",
     "create_web_research_registry",
+    "ArchiveTool", "AttachmentMetadataTool", "AttachmentMetadata", "CreateDraftTool",
+    "DeleteTool", "GmailDraft", "GmailMessage", "GmailProvider", "GmailThread",
+    "LabelTool", "ReadMessageTool", "ReplyTool", "SearchMessagesTool", "SendDraftTool",
+    "ThreadSummaryTool", "UpdateDraftTool", "create_gmail_registry",
 ]
