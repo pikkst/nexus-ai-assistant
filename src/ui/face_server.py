@@ -23,9 +23,23 @@ if str(_src_dir) not in sys.path:
     sys.path.insert(0, str(_src_dir))
 
 from ui.face import NexusFace, Emotion
+from ui.face_themes import FaceTheme
+from config.settings import NexusConfig
 
 HERE = _script_dir
 face_instance = NexusFace()
+try:
+    face_instance.set_theme(NexusConfig.load().face_theme)
+except ValueError:
+    face_instance.set_theme(FaceTheme.CLASSIC)
+
+
+def _select_theme(params: dict[str, list[str]]) -> None:
+    requested = params.get("theme", [face_instance.config.theme])[0]
+    try:
+        face_instance.set_theme(requested)
+    except ValueError:
+        face_instance.set_theme(FaceTheme.CLASSIC)
 
 
 class FaceHandler(BaseHTTPRequestHandler):
@@ -39,6 +53,7 @@ class FaceHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
 
         if path == "/api/face/render":
+            _select_theme(params)
             emotion = params.get("emotion", ["idle"])[0]
             try:
                 svg = face_instance.render(emotion)
@@ -49,6 +64,7 @@ class FaceHandler(BaseHTTPRequestHandler):
             self.wfile.write(svg.encode("utf-8"))
 
         elif path == "/api/face/animate":
+            _select_theme(params)
             emotion = params.get("emotion", ["idle"])[0]
             try:
                 face_instance.state.emotion = Emotion(emotion)
@@ -65,6 +81,12 @@ class FaceHandler(BaseHTTPRequestHandler):
             emotions = [e.value for e in Emotion]
             self.wfile.write(json.dumps({"emotions": emotions}).encode("utf-8"))
 
+        elif path == "/api/face/themes":
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            themes = [theme.value for theme in FaceTheme]
+            self.wfile.write(json.dumps({"themes": themes}).encode("utf-8"))
+
         elif path == "/api/face/config":
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -72,6 +94,7 @@ class FaceHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({
                 "width": cfg.width, "height": cfg.height,
                 "bg_color": cfg.bg_color, "head_color": cfg.head_color,
+                "theme": cfg.theme, "render_style": cfg.render_style,
             }).encode("utf-8"))
 
         elif path in ("/face-demo", "/", "/index.html"):
