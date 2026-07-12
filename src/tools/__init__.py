@@ -27,6 +27,7 @@ from .gmail_tools import (
     UpdateDraftTool,
 )
 from .web_models import PageProvider, SearchProvider, SourceType, WebPage, WebSource
+from .web_factory import create_web_research_registry
 from .web_tools import CompareSourcesTool, OpenPageTool, SaveResearchNoteTool, WebSearchTool
 
 __all__ = [
