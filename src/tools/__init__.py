@@ -19,6 +19,9 @@ from .models import (
 )
 from .permissions import PermissionDecision, PermissionPolicy
 from .registry import ToolRegistry
+from .web_factory import create_web_research_registry
+from .web_models import PageProvider, SearchProvider, SourceType, WebPage, WebSource
+from .web_tools import CompareSourcesTool, OpenPageTool, SaveResearchNoteTool, WebSearchTool
 
 __all__ = [
     "AuditEntry", "InspectProjectTool", "ListDirectoryTool", "PendingToolCall",
@@ -28,4 +31,7 @@ __all__ = [
     "ToolValidationError",
     "EvidenceCommandTool", "ReplaceTextTool", "RestoreSnapshotTool", "RunCommandTool",
     "SearchTextTool", "WriteTextTool", "create_development_tool_registry", "create_project_tool_registry",
+    "CompareSourcesTool", "OpenPageTool", "PageProvider", "SaveResearchNoteTool",
+    "SearchProvider", "SourceType", "WebPage", "WebSearchTool", "WebSource",
+    "create_web_research_registry",
 ]
