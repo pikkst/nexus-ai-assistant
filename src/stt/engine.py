@@ -65,8 +65,8 @@ class Segment:
     text: str
     """Transcribed text for this segment."""
 
-    confidence: float = 0.0
-    """Average confidence for this segment (0.0–1.0)."""
+    speech_probability: float = 0.0
+    """Speech-presence proxy (1.0 - no_speech_prob) for this segment."""
 
 
 @dataclass
@@ -80,7 +80,7 @@ class TranscriptionResult:
     """Detected or configured language code."""
 
     confidence: float
-    """Overall confidence (0.0–1.0)."""
+    """Overall speech-presence proxy (average of per-segment 1.0 - no_speech_prob)."""
 
     segments: list[Segment] = field(default_factory=list)
     """Per-segment breakdown with timing."""
@@ -148,12 +148,13 @@ class STTEngine:
 
         try:
             from faster_whisper import WhisperModel  # noqa: F401
-        except ImportError:
+        except ImportError as exc:
             self._state = STTState.ERROR
-            err = ImportError(
+            err = RuntimeError(
                 "faster-whisper is not installed. "
                 "Install it with: pip install faster-whisper"
             )
+            err.__cause__ = exc
             if self._on_error:
                 try:
                     self._on_error(err)
@@ -204,16 +205,22 @@ class STTEngine:
         audio: np.ndarray,
         *,
         fire_partial: bool = True,
+        on_partial: Callable[[str], None] | None = None,
+        on_final: Callable[[TranscriptionResult], None] | None = None,
     ) -> TranscriptionResult:
         """Transcribe a complete audio array into text.
 
         Args:
             audio: Float32 numpy array, mono, sample rate 16000 Hz.
-            fire_partial: If True, fire on_partial_transcript for each segment.
+            fire_partial: If True, fire the per-segment partial callback.
+            on_partial: Override instance-level partial callback for this call.
+            on_final: Override instance-level final callback for this call.
 
         Returns:
             TranscriptionResult with full text, language, confidence, segments.
         """
+        self._validate_audio(audio)
+
         if self._state != STTState.READY:
             raise RuntimeError(
                 f"STT engine is not ready (state={self._state.value}). "
@@ -221,6 +228,9 @@ class STTEngine:
             )
 
         self._state = STTState.TRANSCRIBING
+
+        partial_callback = on_partial if on_partial is not None else self._on_partial
+        final_callback = on_final if on_final is not None else self._on_final
 
         try:
             segments, info = self._model.transcribe(  # type: ignore[union-attr]
@@ -238,35 +248,37 @@ class STTEngine:
                     start=seg.start or 0.0,
                     end=seg.end or 0.0,
                     text=seg.text.strip(),
-                    confidence=1.0 - (seg.no_speech_prob if seg.no_speech_prob is not None else 0.0),
+                    speech_probability=1.0 - (seg.no_speech_prob if seg.no_speech_prob is not None else 0.0),
                 )
                 segment_list.append(segment)
                 partial_text_parts.append(segment.text)
 
-                if fire_partial and self._on_partial:
+                if fire_partial and partial_callback:
                     try:
-                        self._on_partial(segment.text)
+                        partial_callback(segment.text)
                     except Exception:
                         pass
 
             full_text = " ".join(partial_text_parts).strip()
-            avg_confidence = (
-                sum(s.confidence for s in segment_list) / len(segment_list)
+            avg_speech_probability = (
+                sum(s.speech_probability for s in segment_list) / len(segment_list)
                 if segment_list
                 else 0.0
             )
 
+            detected_language = info.language or self.config.language or "auto"
+
             result = TranscriptionResult(
                 text=full_text,
-                language=info.language or self._resolve_language(),
-                confidence=avg_confidence,
+                language=detected_language,
+                confidence=avg_speech_probability,
                 segments=segment_list,
                 duration=info.duration or 0.0,
             )
 
-            if self._on_final:
+            if final_callback:
                 try:
-                    self._on_final(result)
+                    final_callback(result)
                 except Exception:
                     pass
 
@@ -289,32 +301,26 @@ class STTEngine:
         on_partial: Callable[[str], None] | None = None,
         on_final: Callable[[TranscriptionResult], None] | None = None,
     ) -> TranscriptionResult:
-        """Transcribe audio, firing callbacks as results become available.
+        """Transcribe audio with per-call callback overrides.
 
-        A convenience wrapper around `transcribe` that allows overriding
-        callbacks per-call.
+        Unlike the older state-mutating wrapper, this delegates to
+        `transcribe()` without touching instance callbacks, so it is
+        safe to call concurrently.
 
         Args:
             audio: Float32 numpy array, mono, sample rate 16000 Hz.
-            on_partial: Override instance-level partial callback.
-            on_final: Override instance-level final callback.
+            on_partial: Partial callback for this call only.
+            on_final: Final callback for this call only.
 
         Returns:
             TranscriptionResult with full transcript.
         """
-        previous_partial = self._on_partial
-        previous_final = self._on_final
-
-        if on_partial is not None:
-            self._on_partial = on_partial
-        if on_final is not None:
-            self._on_final = on_final
-
-        try:
-            return await self.transcribe(audio, fire_partial=True)
-        finally:
-            self._on_partial = previous_partial
-            self._on_final = previous_final
+        return await self.transcribe(
+            audio,
+            fire_partial=True,
+            on_partial=on_partial,
+            on_final=on_final,
+        )
 
     # ------------------------------------------------------------------
     # Audio Preprocessing Utilities
@@ -479,6 +485,21 @@ class STTEngine:
     # Internal
     # ------------------------------------------------------------------
 
+    def _validate_audio(self, audio: np.ndarray) -> None:
+        """Validate audio array shape and dtype before transcription."""
+        if not isinstance(audio, np.ndarray):
+            raise TypeError(f"audio must be a numpy array, got {type(audio).__name__}")
+        if audio.ndim != 1:
+            raise ValueError(
+                f"audio must be a 1-D mono array, got {audio.ndim}-D. "
+                "Use STTEngine.preprocess() to convert multi-channel audio."
+            )
+        if audio.dtype != np.float32:
+            raise TypeError(
+                f"audio dtype must be float32, got {audio.dtype}. "
+                "Use STTEngine.preprocess() to convert."
+            )
+
     def _resolve_device(self) -> str:
         """Resolve the effective device string."""
         if self.config.device == "auto":
@@ -492,11 +513,29 @@ class STTEngine:
         return self.config.device
 
     def _resolve_compute_type(self, device: str) -> str:
-        """Resolve compute type based on device."""
+        """Resolve compute type based on device and config.
+
+        Validates the configured compute_type against what the target
+        device supports. Falls back to a safe default on mismatch.
+        """
+        allowed_cpu = {"int8", "float32"}
+        allowed_cuda = {"float16", "int8", "float32"}
+
         if device == "cuda":
-            if self.config.compute_type in ("float16", "int8"):
+            if self.config.compute_type in allowed_cuda:
                 return self.config.compute_type
+            logger.warning(
+                "compute_type=%r is not supported on CUDA, falling back to float16",
+                self.config.compute_type,
+            )
             return "float16"
+
+        if self.config.compute_type in allowed_cpu:
+            return self.config.compute_type
+        logger.warning(
+            "compute_type=%r is not supported on CPU, falling back to int8",
+            self.config.compute_type,
+        )
         return "int8"
 
     def _resolve_language(self) -> str | None:

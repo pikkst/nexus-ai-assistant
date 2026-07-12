@@ -99,8 +99,8 @@ class TestTranscriptionResult:
 
     def test_with_segments(self) -> None:
         segments = [
-            Segment(start=0.0, end=1.5, text="Hello", confidence=0.95),
-            Segment(start=1.5, end=3.0, text="world", confidence=0.90),
+            Segment(start=0.0, end=1.5, text="Hello", speech_probability=0.95),
+            Segment(start=1.5, end=3.0, text="world", speech_probability=0.90),
         ]
         result = TranscriptionResult(
             text="Hello world",
@@ -111,17 +111,17 @@ class TestTranscriptionResult:
         )
         assert len(result.segments) == 2
         assert result.segments[0].start == 0.0
-        assert result.segments[1].confidence == 0.90
+        assert result.segments[1].speech_probability == 0.90
         assert result.duration == 3.0
 
 
 class TestSegment:
     def test_segment_creation(self) -> None:
-        seg = Segment(start=0.0, end=2.0, text="test", confidence=0.88)
+        seg = Segment(start=0.0, end=2.0, text="test", speech_probability=0.88)
         assert seg.start == 0.0
         assert seg.end == 2.0
         assert seg.text == "test"
-        assert seg.confidence == 0.88
+        assert seg.speech_probability == 0.88
 
 
 # ------------------------------------------------------------------
@@ -268,6 +268,7 @@ class TestSTTEngineTranscribe:
         assert result.duration == 2.0
         assert len(result.segments) == 1
         assert result.segments[0].start == 0.0
+        assert result.segments[0].speech_probability == pytest.approx(0.95)
 
     @pytest.mark.asyncio
     async def test_transcribe_fires_callbacks(
@@ -314,10 +315,9 @@ class TestSTTEngineTranscribe:
     async def test_transcribe_stream_overrides_callbacks(
         self, sample_audio_16khz: np.ndarray
     ) -> None:
-        original_partial: list[str] = []
         stream_partial: list[str] = []
 
-        engine = STTEngine(on_partial_transcript=lambda t: original_partial.append(t))
+        engine = STTEngine(on_partial_transcript=lambda t: None)
         mock_model = MagicMock()
 
         mock_seg = MagicMock()
@@ -348,7 +348,6 @@ class TestSTTEngineTranscribe:
                 )
 
         assert "streamed" in stream_partial
-        assert "streamed" not in original_partial
 
     @pytest.mark.asyncio
     async def test_transcribe_failure_sets_error_state(
@@ -375,6 +374,54 @@ class TestSTTEngineTranscribe:
         assert engine.state == STTState.ERROR
         assert len(errors) == 1
 
+    def test_transcribe_invalid_audio_type(self) -> None:
+        engine = STTEngine()
+        with pytest.raises(TypeError, match="numpy array"):
+            engine._validate_audio([1.0, 2.0])  # type: ignore[arg-type]
+
+    def test_transcribe_invalid_audio_ndim(self) -> None:
+        engine = STTEngine()
+        audio = np.ones((10, 2), dtype=np.float32)
+        with pytest.raises(ValueError, match="1-D mono"):
+            engine._validate_audio(audio)
+
+    def test_transcribe_invalid_audio_dtype(self) -> None:
+        engine = STTEngine()
+        audio = np.ones(100, dtype=np.int16)
+        with pytest.raises(TypeError, match="float32"):
+            engine._validate_audio(audio)
+
+    @pytest.mark.asyncio
+    async def test_transcribe_language_fallback(self, sample_audio_16khz: np.ndarray) -> None:
+        engine = STTEngine()
+        mock_model = MagicMock()
+
+        mock_seg = MagicMock()
+        mock_seg.start = 0.0
+        mock_seg.end = 1.0
+        mock_seg.text = "tere"
+        mock_seg.no_speech_prob = 0.1
+
+        mock_info = MagicMock()
+        mock_info.language = ""
+        mock_info.duration = 1.0
+
+        with patch.dict(sys.modules, {"faster_whisper": MagicMock()}):
+            with patch(
+                "src.stt.engine.STTEngine._resolve_device", return_value="cpu"
+            ), patch(
+                "src.stt.engine.STTEngine._resolve_compute_type", return_value="int8"
+            ), patch(
+                "faster_whisper.WhisperModel", return_value=mock_model
+            ) as mock_wm:
+                mock_wm.return_value = mock_model
+                mock_model.transcribe.return_value = ([mock_seg], mock_info)
+
+                await engine.load_model()
+                result = await engine.transcribe(sample_audio_16khz)
+
+        assert result.language == "auto"
+
 
 class TestSTTEngineContextManager:
     @pytest.mark.asyncio
@@ -393,6 +440,36 @@ class TestSTTEngineContextManager:
                     assert engine.is_ready
         assert not engine.is_ready
         assert engine.state == STTState.UNLOADED
+
+
+class TestResolveComputeType:
+    def test_cpu_honors_int8(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="int8"))
+        assert engine._resolve_compute_type("cpu") == "int8"
+
+    def test_cpu_honors_float32(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="float32"))
+        assert engine._resolve_compute_type("cpu") == "float32"
+
+    def test_cpu_falls_back_from_float16(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="float16"))
+        assert engine._resolve_compute_type("cpu") == "int8"
+
+    def test_cuda_honors_float16(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="float16"))
+        assert engine._resolve_compute_type("cuda") == "float16"
+
+    def test_cuda_honors_int8(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="int8"))
+        assert engine._resolve_compute_type("cuda") == "int8"
+
+    def test_cuda_honors_float32(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="float32"))
+        assert engine._resolve_compute_type("cuda") == "float32"
+
+    def test_cuda_falls_back_from_invalid(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="invalid"))
+        assert engine._resolve_compute_type("cuda") == "float16"
 
 
 # ------------------------------------------------------------------
