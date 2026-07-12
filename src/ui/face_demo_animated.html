@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Nexus Face — Animated Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0f0f1a; font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    #face-container { width: 400px; height: 500px; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.4); margin-bottom: 24px; }
+    #face-container svg { width: 100%; height: 100%; display: block; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 500px; }
+    .controls button { background: #1e1e38; color: #aaaacc; border: 1px solid #2a2a44; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 13px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+    .controls button:hover { background: #2a2a44; color: #ffffff; border-color: #6ec6ff; }
+    .controls button.active { background: #2a2a44; color: #6ec6ff; border-color: #6ec6ff; }
+    #status { color: #55556a; margin-top: 20px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div id="face-container"></div>
+  <div class="controls" id="controls">
+    <button data-emotion="idle" class="active">Idle</button>
+    <button data-emotion="listening">Listening</button>
+    <button data-emotion="thinking">Thinking</button>
+    <button data-emotion="speaking">Speaking</button>
+    <button data-emotion="happy">Happy</button>
+    <button data-emotion="sad">Sad</button>
+    <button data-emotion="surprised">Surprised</button>
+    <button data-emotion="confused">Confused</button>
+    <button data-emotion="sleeping">Sleeping</button>
+  </div>
+  <div id="status">Click an emotion above</div>
+
+  <script>
+    const EMOTIONS = ["idle","listening","thinking","speaking","happy","sad","surprised","confused","sleeping"];
+    let currentEmotion = "idle";
+    let frame = 0;
+    const container = document.getElementById("face-container");
+
+    // Load face SVG from API or generate client-side
+    // For this demo, we fetch from the backend
+    async function renderFace(emotion, animFrame) {
+      try {
+        const url = animFrame !== undefined
+          ? `/api/face/animate?emotion=${emotion}&dt=0.05`
+          : `/api/face/render?emotion=${emotion}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Server not available");
+        const svg = await res.text();
+        container.innerHTML = svg;
+        document.getElementById("status").textContent = "Connected — " + emotion;
+      } catch {
+        // Fallback: show static placeholder
+        container.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500"><rect x="0" y="0" width="400" height="500" fill="#1a1a2e" rx="20"/><text x="200" y="240" text-anchor="middle" fill="#55556a" font-family="Arial" font-size="16">Backend offline</text><text x="200" y="270" text-anchor="middle" fill="#3d3d55" font-family="Arial" font-size="13">Run: python -m nexus.ui.face_demo</text></svg>`;
+        document.getElementById("status").textContent = "Offline — start the server";
+      }
+    }
+
+    // Emotion buttons
+    document.querySelectorAll("[data-emotion]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-emotion]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentEmotion = btn.dataset.emotion;
+        renderFace(currentEmotion, 0);
+      });
+    });
+
+    // Initial render
+    renderFace("idle", 0);
+
+    // Animation loop (if backend supports it)
+    setInterval(() => {
+      const active = document.querySelector("[data-emotion].active");
+      if (active) {
+        renderFace(active.dataset.emotion, frame);
+        frame++;
+      }
+    }, 500);
+  </script>
+</body>
+</html>
