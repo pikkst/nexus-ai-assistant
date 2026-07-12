@@ -13,17 +13,13 @@
 | Project Scaffold | ✅ Complete |
 | Git Repository | ✅ Initialized on `develop` |
 | Audio Capture | ✅ Complete (capture.py, vad.py, 17 tests) |
-<<<<<<< HEAD
 | Audio Playback | ✅ Complete (playback.py, tests added) |
-=======
-| Audio Playback | ✅ Complete (playback.py, 9 tests) — PR #1 open |
 | Settings / Config | ✅ Complete (NexusConfig, UI panel, 7 tests) |
->>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 | VAD | ✅ Built into capture pipeline |
-| STT | 📋 Planned |
+| STT | ✅ Complete (engine.py, 37 tests) |
 | TTS | 📋 Planned |
 | LLM Integration | 📋 Planned |
-| Camera/Vision | 📋 Planned |
+| Camera/Vision | ✅ Complete (camera.py, tests added) |
 | Memory Store | 📋 Planned |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
 | User Interface | 📋 Planned |
@@ -46,17 +42,16 @@
 | D-019 | 2026-07-12 | PyAudio write-thread for playback | Non-blocking, simple output streaming | Backend |
 | D-020 | 2026-07-12 | soundfile for WAV, pydub for MP3 | Covers required formats with minimal deps | Backend |
 | D-021 | 2026-07-12 | Volume as gain factor on float32 audio | Consistent with capture pipeline dtype | Backend |
-<<<<<<< HEAD
-=======
 | D-022 | 2026-07-12 | NexusConfig persisted to JSON | Simple, human-editable, no extra runtime deps | Backend |
 | D-023 | 2026-07-12 | CustomTkinter for settings UI | Native Windows look, fast to implement | Backend |
 | D-024 | 2026-07-12 | Default TTS voice: en_US-lessac-medium | Good Estonian/English coverage in Piper | Backend |
 | D-025 | 2026-07-12 | Default STT language: et | Primary user language is Estonian | Backend |
-<<<<<<< HEAD
->>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
-=======
 | D-026 | 2026-07-12 | PyAudio device enumeration in settings UI | Lets user pick mic/speaker without editing config | Backend |
->>>>>>> 08230c8 (feat(ui): add audio device selection to settings panel)
+| D-027 | 2026-07-12 | OpenCV for camera capture | Industry standard, simple Python API | Backend |
+| D-028 | 2026-07-12 | Camera runs in background thread | Non-blocking, consistent with audio capture | Backend |
+| D-029 | 2026-07-12 | faster-whisper for STT engine | Best offline accuracy, faster than original Whisper | Backend |
+| D-030 | 2026-07-12 | STT partial/final callback pattern | Supports streaming UX with interim results | Backend |
+| D-031 | 2026-07-12 | Audio preprocessing before STT | Normalize, trim silence, resample to 16kHz | Backend |
 
 ---
 
@@ -103,27 +98,35 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** ARCH-003 — Camera / Vision Service (next in queue)
+**Current Task:** ARCH-005 — Text-to-Speech Engine
 
-**Most recently completed:** ARCH-002 — Audio Playback Service, ARCH-009 — UI Settings Panel
+**Most recently completed:** ARCH-004 — Speech-to-Text Engine, ARCH-003 — Camera / Vision Service, ARCH-009 — UI Settings Panel
 
 **What was built:**
-- `src/audio/playback.py` — `AudioPlayback` with PyAudio write-thread, queue, volume, file support
-- `src/config/settings.py` — `NexusConfig` with JSON persistence
-- `src/ui/settings.py` — CustomTkinter settings window (volume, sample rate, input/output device selection, voice, speed, language, theme)
-- `tests/test_settings.py` — 7 tests for config load/save/roundtrip
-- `tests/test_audio.py` — playback tests added (24 total passing)
+- `src/stt/engine.py` — `STTEngine` with faster-whisper, configurable model size/language, partial/final callbacks, graceful fallback, audio preprocessing utilities
+- `tests/test_stt.py` — 37 tests covering config, state management, transcription, callbacks, error handling, and audio preprocessing
+- `src/stt/__init__.py` — exports STTEngine, STTConfig, TranscriptionResult, Segment, STTState
+- `src/audio/capture.py` — AudioCapture with PyAudio callback mode, VAD integration, background thread
+- `src/audio/playback.py` — AudioPlayback with queue-based non-blocking playback, volume control
+- `src/vision/camera.py` — CameraCapture with OpenCV, background thread, callback/queue API
+- `src/config/settings.py` — NexusConfig with JSON persistence
+- `src/ui/settings.py` — CustomTkinter settings window
+- `tests/test_audio.py` — 28 audio tests (VAD + capture + playback)
+- `tests/test_vision.py` — 11 camera tests
+- `tests/test_settings.py` — 7 config tests
 
 **Key decisions:**
-- PyAudio write-thread for non-blocking playback
-- soundfile for WAV, pydub for MP3, raw PCM via numpy
-- CustomTkinter for settings panel (native Windows look, simple API)
+- faster-whisper for STT (faster than OpenAI Whisper, good accuracy)
+- Partial/final callback pattern for streaming transcription UX
+- Audio preprocessing: normalize RMS, trim silence, resample to 16kHz
+- Graceful fallback: ImportError/RuntimeError caught, error callback fired, state set to ERROR
+- PyAudio callback mode for non-blocking capture
+- soundfile for WAV, pydub for MP3
+- CustomTkinter for settings panel
 - Config persisted to `~/.nexus/config.json`
-- Volume applied as gain factor on float32 audio
-- Graceful degradation when no speakers are available
-- Audio device enumeration via PyAudio with "Default" fallback
+- OpenCV for camera capture with graceful fallback
 
-**Next Task:** ARCH-003 — Camera / Vision Service
+**Next Task:** ARCH-005 — Text-to-Speech Engine
 
 ---
 
@@ -237,9 +240,80 @@ class AudioPlayback:
 
     @property
     def is_active(self) -> bool
+    ```
+
+### STT Engine API
+
+```python
+# src/stt/engine.py
+class STTConfig:
+    model_size: str = "base"
+    device: str = "auto"
+    compute_type: str = "int8"
+    language: str = "auto"
+    beam_size: int = 5
+    vad_filter: bool = True
+
+class STTEngine:
+    def __init__(
+        self,
+        config: STTConfig | None = None,
+        on_partial_transcript: Callable[[str], None] | None = None,
+        on_final_transcript: Callable[["TranscriptionResult"], None] | None = None,
+        on_error: Callable[[Exception], None] | None = None,
+    ): ...
+
+    async def load_model(self) -> None
+    async def unload_model(self) -> None
+    async def transcribe(self, audio: np.ndarray, *, fire_partial: bool = True) -> TranscriptionResult
+    async def transcribe_stream(self, audio: np.ndarray, ...) -> TranscriptionResult
+
+    @staticmethod
+    def normalize_audio(audio: np.ndarray, target_rms: float = 0.1) -> np.ndarray
+    @staticmethod
+    def trim_silence(audio: np.ndarray, sample_rate: int = 16000, ...) -> np.ndarray
+    @staticmethod
+    def resample_to_16khz(audio: np.ndarray, original_sample_rate: int) -> np.ndarray
+    @staticmethod
+    def preprocess(audio: np.ndarray, sample_rate: int = 16000, ...) -> np.ndarray
+
+    @property
+    def state(self) -> STTState
+    @property
+    def is_ready(self) -> bool
+
+@dataclass
+class TranscriptionResult:
+    text: str
+    language: str
+    confidence: float
+    segments: list[Segment]
+    duration: float
+
+@dataclass
+class Segment:
+    start: float
+    end: float
+    text: str
+    confidence: float
 ```
 
 ---
 
-> **Last updated:** 2026-07-12  
+## 8. Completed Tasks
+
+| Task ID | Name | Completed | By |
+|---------|------|-----------|----|
+| DOCS-001 | Create Project Documentation Foundation | 2026-07-12 | Documentation Agent |
+| DOCS-002 | Initialize Project Structure & Git | 2026-07-12 | Documentation Agent |
+| UI-FACE-001 | Looi-Style Animated Face Module | 2026-07-12 | Documentation Agent |
+| ARCH-001 | Audio Capture Service | 2026-07-12 | Backend Agent |
+| ARCH-002 | Audio Playback Service | 2026-07-12 | Backend Agent |
+| ARCH-003 | Camera / Vision Service | 2026-07-12 | Backend Agent |
+| ARCH-004 | Speech-to-Text Engine | 2026-07-12 | Backend Agent |
+| ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
+
+---
+
+> **Last updated:** 2026-07-12
 > **Maintainer:** Documentation Agent
