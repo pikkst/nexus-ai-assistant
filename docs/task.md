@@ -177,9 +177,42 @@ so that I can perceive the environment and support future vision-based interacti
 
 ### Task: ARCH-004 — Speech-to-Text Engine
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
+
+---
+
+## Task Description
+
+Implement a local speech-to-text engine that converts microphone audio into text transcripts for the Nexus assistant pipeline.
+
+## User Story
+
+As the Nexus assistant,
+I need reliable speech recognition
+so that I can understand user requests and respond meaningfully.
+
+## Acceptance Criteria
+
+- [x] **AC-1:** STT service that accepts audio chunks or a live microphone stream
+- [x] **AC-2:** Configurable model size and language settings
+- [x] **AC-3:** Support for partial and final transcript callbacks
+- [x] **AC-4:** Low-latency processing suitable for interactive use
+- [x] **AC-5:** Graceful fallback when the model is unavailable or cannot load
+- [x] **AC-6:** Unit tests for audio preprocessing and transcript handling
+
+## Definition of Done
+
+- STT can process sample audio and return structured transcript output
+- The module integrates cleanly with the audio capture pipeline
+- Tests for successful and failed recognition flows pass
+- PR created from `feature/speech-to-text-engine` into `develop`
+
+---
 
 **EST:** 8 SP
+
+**RT:** 2026-07-12
+**QA:** 2026-07-12
 
 ---
 
@@ -504,6 +537,8 @@ so that I can personalize my experience.
 | UI-FACE-001 | Looi-Style Animated Face Module | 2026-07-12 | Documentation Agent |
 | ARCH-001 | Audio Capture Service | 2026-07-12 | Backend Agent |
 | ARCH-002 | Audio Playback Service | 2026-07-12 | Backend Agent |
+| ARCH-003 | Camera / Vision Service | 2026-07-12 | Backend Agent |
+| ARCH-004 | Speech-to-Text Engine | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
 
 ---
