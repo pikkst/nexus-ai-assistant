@@ -706,7 +706,7 @@ so that information gathering is useful, verifiable, and organized.
 
 ### Task: CONNECTOR-001 — Credential Vault & OAuth Foundation
 
-**Status:** 📋 BACKLOG
+**Status:** 🔀 IN REVIEW
 
 ---
 
@@ -723,12 +723,12 @@ so that Nexus can use approved services without exposing credentials.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Provider-neutral account, scope, token-state, and consent models are defined
-- [ ] **AC-2:** Secrets use Windows Credential Manager or another supported OS keyring
-- [ ] **AC-3:** OAuth authorization, refresh, expiry, revocation, and reconnect flows are supported
-- [ ] **AC-4:** Connector scopes are minimized and visible to the user before authorization
-- [ ] **AC-5:** Tokens are redacted from logs, exceptions, tool arguments, memory, and LLM context
-- [ ] **AC-6:** Tests cover refresh, revocation, missing keyring, redaction, and concurrent access
+- [x] **AC-1:** Provider-neutral account, scope, token-state, and consent models are defined
+- [x] **AC-2:** Secrets use Windows Credential Manager or another supported OS keyring
+- [x] **AC-3:** OAuth authorization, refresh, expiry, revocation, and reconnect flows are supported
+- [x] **AC-4:** Connector scopes are minimized and visible to the user before authorization
+- [x] **AC-5:** Tokens are redacted from logs, exceptions, tool arguments, memory, and LLM context
+- [x] **AC-6:** Tests cover refresh, revocation, missing keyring, redaction, and concurrent access
 
 ## Definition of Done
 
