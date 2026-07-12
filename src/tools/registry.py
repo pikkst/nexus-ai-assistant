@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 from collections.abc import Iterable
 from datetime import datetime
 
@@ -51,7 +52,7 @@ class ToolRegistry:
 
     def discover(self) -> tuple[ToolDescriptor, ...]:
         return tuple(
-            ToolDescriptor(tool.name, tool.description, tool.risk)
+            ToolDescriptor(tool.name, tool.description, tool.risk, copy.deepcopy(tool.parameters))
             for tool in sorted(self._tools.values(), key=lambda item: item.name)
         )
 

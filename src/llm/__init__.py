@@ -9,6 +9,7 @@ from .client import (
     LLMUnavailableError,
 )
 from .prompts import DEFAULT_SYSTEM_PROMPT, build_messages
+from .tool_types import LLMToolCall
 
 __all__ = [
     "DEFAULT_SYSTEM_PROMPT",
@@ -17,6 +18,7 @@ __all__ = [
     "LLMError",
     "LLMResponse",
     "LLMTimeoutError",
+    "LLMToolCall",
     "LLMUnavailableError",
     "build_messages",
 ]

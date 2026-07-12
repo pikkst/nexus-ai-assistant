@@ -10,6 +10,7 @@ from typing import Any
 import httpx
 
 from .prompts import DEFAULT_SYSTEM_PROMPT, build_messages
+from .tool_types import LLMToolCall
 
 
 class LLMError(RuntimeError):
@@ -55,6 +56,7 @@ class LLMResponse:
     done: bool = True
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
+    tool_calls: tuple[LLMToolCall, ...] = ()
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -118,6 +120,31 @@ class LLMClient:
         data = response.json()
         return self._parse_response(data)
 
+    async def chat(
+        self,
+        messages: Sequence[dict[str, Any]],
+        tools: Sequence[dict[str, Any]],
+    ) -> LLMResponse:
+        """Send a complete Ollama tool-capable conversation."""
+        payload = {
+            "model": self.config.model,
+            "messages": [dict(message) for message in messages],
+            "tools": [dict(tool) for tool in tools],
+            "stream": False,
+            "options": {
+                "temperature": self.config.temperature,
+                "num_predict": self.config.max_tokens,
+            },
+        }
+        try:
+            response = await self._client.post("/api/chat", json=payload)
+            response.raise_for_status()
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError("LLM backend request timed out") from exc
+        except (httpx.ConnectError, httpx.NetworkError, httpx.HTTPStatusError) as exc:
+            raise LLMUnavailableError(f"LLM backend is unavailable: {exc}") from exc
+        return self._parse_response(response.json())
+
     async def stream(
         self,
         prompt: str,
@@ -157,13 +184,35 @@ class LLMClient:
 
     def _parse_response(self, data: dict[str, Any]) -> LLMResponse:
         message = data.get("message")
-        if not isinstance(message, dict) or not isinstance(message.get("content"), str):
+        if not isinstance(message, dict):
             raise LLMError("LLM backend returned an invalid response")
+        content = message.get("content", "")
+        if not isinstance(content, str):
+            raise LLMError("LLM backend returned invalid message content")
+        tool_calls = self._parse_tool_calls(message.get("tool_calls", []))
+        if not content and not tool_calls:
+            raise LLMError("LLM backend returned an empty response")
         return LLMResponse(
-            content=message["content"],
+            content=content,
             model=str(data.get("model", self.config.model)),
             done=bool(data.get("done", True)),
             prompt_tokens=data.get("prompt_eval_count"),
             completion_tokens=data.get("eval_count"),
+            tool_calls=tool_calls,
             metadata={key: value for key, value in data.items() if key != "message"},
         )
+
+    def _parse_tool_calls(self, values: Any) -> tuple[LLMToolCall, ...]:
+        if not isinstance(values, list):
+            raise LLMError("LLM backend returned invalid tool calls")
+        parsed = []
+        for position, value in enumerate(values):
+            function = value.get("function") if isinstance(value, dict) else None
+            if not isinstance(function, dict):
+                raise LLMError("LLM backend returned an invalid tool call")
+            name = function.get("name")
+            arguments = function.get("arguments", {})
+            if not isinstance(name, str) or not name or not isinstance(arguments, dict):
+                raise LLMError("LLM backend returned invalid tool call fields")
+            parsed.append(LLMToolCall(name, dict(arguments), int(function.get("index", position))))
+        return tuple(parsed)

@@ -387,7 +387,7 @@ so that I can see the assistant’s state and interact with it intuitively.
 
 ### Task: INTEGRATION-001 — Main Application & Pipeline
 
-**Status:** ⏳ IN PROGRESS
+**Status:** ✅ DONE
 
 **EST:** 8 SP
 
@@ -515,7 +515,7 @@ structured memory, persona, evaluation, safe learning, unified UI, and packaging
 
 ### Task: CORE-001 — Assistant Runtime State Machine
 
-**Status:** ⏳ IN PROGRESS
+**Status:** ✅ DONE
 
 ---
 
@@ -553,7 +553,7 @@ so that listening, planning, acting, waiting, and failure states are understanda
 
 ### Task: TOOLS-001 — Tool Protocol, Registry & Permissions
 
-**Status:** ⏳ IN PROGRESS
+**Status:** ✅ DONE
 
 ---
 
@@ -592,7 +592,7 @@ so that it can act without hiding risky or destructive operations.
 
 ### Task: TOOLS-002 — LLM Tool Selection & Calling
 
-**Status:** 📋 BACKLOG
+**Status:** ⏳ IN PROGRESS
 
 ---
 
@@ -609,12 +609,12 @@ so that natural-language requests can become safe, concrete actions.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Tool descriptors expose validated JSON-compatible argument schemas
-- [ ] **AC-2:** LLM responses can request a tool through a typed structured call
-- [ ] **AC-3:** Requested tools and arguments are validated exclusively by ToolRegistry
-- [ ] **AC-4:** Confirmation-required results pause and resume the tool-calling loop
-- [ ] **AC-5:** Per-request call count, timeout, cancellation, and loop-detection limits are enforced
-- [ ] **AC-6:** Mocked end-to-end tests cover selection, result injection, rejection, and recovery
+- [x] **AC-1:** Tool descriptors expose validated JSON-compatible argument schemas
+- [x] **AC-2:** LLM responses can request a tool through a typed structured call
+- [x] **AC-3:** Requested tools and arguments are validated exclusively by ToolRegistry
+- [x] **AC-4:** Confirmation-required results pause and resume the tool-calling loop
+- [x] **AC-5:** Per-request call count, timeout, cancellation, and loop-detection limits are enforced
+- [x] **AC-6:** Mocked end-to-end tests cover selection, result injection, rejection, and recovery
 
 ## Definition of Done
 
@@ -934,7 +934,7 @@ so that service integrations can evolve as isolated, reviewable packages.
 
 ### Task: TASKS-001 — Goals, Plans & Resumable Tasks
 
-**Status:** ⏳ IN PROGRESS
+**Status:** ✅ DONE
 
 ---
 
@@ -1240,7 +1240,7 @@ so that development imports and distributed installations behave the same way.
 
 ### Task: UI-FACE-002 — Selectable Face Themes
 
-**Status:** ⏳ IN PROGRESS
+**Status:** ✅ DONE
 
 ---
 
@@ -1293,8 +1293,13 @@ so that the assistant can match my preferred mood and desktop style.
 | ARCH-006 | LLM Integration | 2026-07-12 | Backend Agent |
 | ARCH-007 | Memory / Vector Store | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
+| INTEGRATION-001 | Main Application & Pipeline | 2026-07-13 | Integration Agent |
+| CORE-001 | Assistant Runtime State Machine | 2026-07-13 | Integration Agent |
+| UI-FACE-002 | Selectable Face Themes | 2026-07-13 | UI Agent |
+| TOOLS-001 | Tool Protocol, Registry & Permissions | 2026-07-13 | Integration Agent |
+| TASKS-001 | Goals, Plans & Resumable Tasks | 2026-07-13 | Integration Agent |
 
 ---
 
-> **Last updated:** 2026-07-12  
+> **Last updated:** 2026-07-13
 > **Maintainer:** Documentation Agent

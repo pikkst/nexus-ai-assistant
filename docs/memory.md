@@ -22,13 +22,14 @@
 | Camera/Vision | ✅ Complete (camera.py, tests added) |
 | Memory Store | ✅ Complete (JSON persistence, similarity search, pruning) |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
-| Selectable Face Themes | ⏳ In Progress (UI-FACE-002) |
+| Selectable Face Themes | ✅ Complete (UI-FACE-002) |
 | User Interface | 📋 Planned |
-| Main Pipeline | ⏳ In Progress (INTEGRATION-001) |
+| Main Pipeline | ✅ Complete (INTEGRATION-001) |
 | Packaging | 📋 Planned |
-| Runtime State Machine | ⏳ In Progress (CORE-001) |
-| Tool Execution & Permissions | ⏳ In Progress (TOOLS-001) |
-| Goals & Resumable Tasks | ⏳ In Progress (TASKS-001) |
+| Runtime State Machine | ✅ Complete (CORE-001) |
+| Tool Execution & Permissions | ✅ Complete (TOOLS-001) |
+| Goals & Resumable Tasks | ✅ Complete (TASKS-001) |
+| LLM Tool Selection & Calling | ⏳ In Progress (TOOLS-002) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
 | Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
 | Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
@@ -82,6 +83,9 @@
 | D-052 | 2026-07-13 | Goals and plan steps persist as versioned atomic JSON | Task state remains local, transparent, restartable, and consistent with existing storage patterns | Integration |
 | D-053 | 2026-07-13 | Active goals and steps recover as paused after process restart | Nexus never assumes interrupted work continued or completed while the process was offline | Integration |
 | D-054 | 2026-07-13 | Successful verified steps require machine evidence or explicit user confirmation | LLM assertions alone cannot mark real work complete | Integration |
+| D-055 | 2026-07-13 | Tool calls use Ollama's native function schema and role=tool result messages | The local backend receives its documented protocol without an invented intermediary format | Integration |
+| D-056 | 2026-07-13 | All model-requested calls execute exclusively through ToolRegistry | Model output cannot bypass schema validation, risk policy, timeout, cancellation, or audit | Integration |
+| D-057 | 2026-07-13 | Agent loops pause on confirmation and enforce call, repetition, timeout, and parallel-call guards | Human control and bounded execution take priority over autonomous continuation | Integration |
 
 ---
 
@@ -128,11 +132,16 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** TASKS-001 — Goals, Plans & Resumable Tasks
+**Current Task:** TOOLS-002 — LLM Tool Selection & Calling
 
 **Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
+- `src/llm/tool_types.py` and `LLMClient.chat` — native Ollama tool schemas, calls, and role=tool conversations
+- `src/tools/calling.py` — typed completed, waiting-confirmation, and failed agent-run snapshots
+- `src/tools/agent.py` — bounded selection, registry invocation, result injection, pause/resume, and recovery loop
+- Tool descriptors and built-ins now expose defensive JSON-compatible parameter schemas
+- `tests/test_llm_tools.py`, `tests/test_tool_agent.py`, and `tests/test_tool_agent_limits.py` — protocol, selection, confirmation, rejection, timeout, loop, limit, and cancellation tests
 - `src/tasks/models.py` — typed goals, plan steps, dependencies, results, evidence, blockers, events, and statuses
 - `src/tasks/store.py` and `src/tasks/codec.py` — atomic versioned JSON persistence and full model round-trip
 - `src/tasks/operations.py` — validated start, pause, resume, cancel, block, resolve, fail, and complete transitions
@@ -255,11 +264,11 @@
 7. `CONNECTOR-004` and `CONNECTOR-005` — Telegram and LinkedIn-assisted workflows
 8. `PLUGIN-001` — third-party MCP and plugin discovery
 
-**TASKS-001 validation:** 178 tests pass. Ruff and mypy are configured in
+**TOOLS-002 validation:** 189 tests pass. Ruff and mypy are configured in
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
-**Next Task after merge:** TOOLS-002 — LLM Tool Selection & Calling
+**Next Task after merge:** TOOLS-003 — Local Development Toolset
 
 ---
 
@@ -558,6 +567,28 @@ JSONL audit entry, including rejected, failed, timed-out, and cancelled requests
 
 ---
 
+### LLM Tool-Calling API
+
+```python
+class ToolCallingAgent:
+    async def run(self, prompt: str) -> ToolAgentRun
+    async def resume(self, run: ToolAgentRun, *, confirmed: bool) -> ToolAgentRun
+
+class ToolRunStatus(Enum):
+    COMPLETED = "completed"
+    WAITING_CONFIRMATION = "waiting_confirmation"
+    FAILED = "failed"
+```
+
+The agent sends registered JSON function schemas through Ollama's native `tools` field, parses
+`message.tool_calls`, executes exclusively through `ToolRegistry`, and returns results as
+`role: tool` messages. It rejects parallel calls for now and bounds total calls, repeated-call loops,
+timeouts, and cancellation. Confirmation-required calls return a resumable snapshot.
+
+Protocol reference: https://docs.ollama.com/capabilities/tool-calling
+
+---
+
 ### Goal & Task Manager API
 
 ```python
@@ -620,6 +651,11 @@ The face server accepts `theme` on render and animate requests and exposes avail
 | ARCH-006 | LLM Integration | 2026-07-12 | Backend Agent |
 | ARCH-007 | Memory / Vector Store | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
+| INTEGRATION-001 | Main Application & Pipeline | 2026-07-13 | Integration Agent |
+| CORE-001 | Assistant Runtime State Machine | 2026-07-13 | Integration Agent |
+| UI-FACE-002 | Selectable Face Themes | 2026-07-13 | UI Agent |
+| TOOLS-001 | Tool Protocol, Registry & Permissions | 2026-07-13 | Integration Agent |
+| TASKS-001 | Goals, Plans & Resumable Tasks | 2026-07-13 | Integration Agent |
 
 ---
 
