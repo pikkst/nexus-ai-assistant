@@ -28,6 +28,31 @@ from .gmail_tools import (
 )
 from .web_models import PageProvider, SearchProvider, SourceType, WebPage, WebSource
 from .web_tools import CompareSourcesTool, OpenPageTool, SaveResearchNoteTool, WebSearchTool
+from .calendar_models import (
+    Attendee,
+    Calendar,
+    Event,
+    EventDraft,
+    FreeBusyRequest,
+    FreeBusySlot,
+    RecurrenceFrequency,
+    RecurrenceRule,
+    Reminder,
+    Timezone,
+    CalendarProvider,
+)
+from .calendar_tools import (
+    CreateEventDraftTool,
+    CreateEventTool,
+    DeleteEventTool,
+    FindConflictsTool,
+    FindFreeTimeTool,
+    GetEventTool,
+    ListCalendarsTool,
+    ListEventsTool,
+    UpdateEventTool,
+)
+from .calendar_factory import create_calendar_registry
 
 __all__ = [
     "AuditEntry", "InspectProjectTool", "ListDirectoryTool", "PendingToolCall",
@@ -44,4 +69,9 @@ __all__ = [
     "DeleteTool", "GmailDraft", "GmailMessage", "GmailProvider", "GmailThread",
     "LabelTool", "ReadMessageTool", "ReplyTool", "SearchMessagesTool", "SendDraftTool",
     "ThreadSummaryTool", "UpdateDraftTool", "create_gmail_registry",
+    "Attendee", "Calendar", "Event", "EventDraft", "FreeBusyRequest", "FreeBusySlot",
+    "RecurrenceFrequency", "RecurrenceRule", "Reminder", "Timezone", "CalendarProvider",
+    "CreateEventDraftTool", "CreateEventTool", "DeleteEventTool", "FindConflictsTool",
+    "FindFreeTimeTool", "GetEventTool", "ListCalendarsTool", "ListEventsTool",
+    "UpdateEventTool", "create_calendar_registry",
 ]
