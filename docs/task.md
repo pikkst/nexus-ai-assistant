@@ -198,6 +198,44 @@ so that I can respond to the user with speech.
 
 ---
 
+### Task: ARCH-009 — UI Settings Panel
+
+**Status:** 📋 BACKLOG
+
+---
+
+## Task Description
+
+Implement a settings panel for the Nexus UI allowing users to configure audio devices, volume, TTS voice, and language.
+
+## User Story
+
+As a Nexus user,
+I want to adjust audio settings, voice, and language from the UI
+so that I can personalize my experience.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** Settings window with audio section (volume slider, sample rate, device selection)
+- [ ] **AC-2:** TTS voice/tone selection
+- [ ] **AC-3:** Language selection (et/en)
+- [ ] **AC-4:** Persist settings to `~/.nexus/config.json`
+- [ ] **AC-5:** Load settings on startup
+
+## Definition of Done
+
+- `pytest tests/test_settings.py` passes
+- Settings window opens and saves correctly
+
+---
+
+**EST:** 3 SP
+
+**RT:**
+**QA:**
+
+---
+
 ## Completed Tasks
 
 | Task ID | Name | Completed | By |

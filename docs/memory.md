@@ -13,7 +13,12 @@
 | Project Scaffold | ✅ Complete |
 | Git Repository | ✅ Initialized on `develop` |
 | Audio Capture | ✅ Complete (capture.py, vad.py, 17 tests) |
+<<<<<<< HEAD
 | Audio Playback | ✅ Complete (playback.py, tests added) |
+=======
+| Audio Playback | ✅ Complete (playback.py, 9 tests) — PR #1 open |
+| Settings / Config | ✅ Complete (NexusConfig, UI panel, 7 tests) |
+>>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 | VAD | ✅ Built into capture pipeline |
 | STT | 📋 Planned |
 | TTS | 📋 Planned |
@@ -41,6 +46,13 @@
 | D-019 | 2026-07-12 | PyAudio write-thread for playback | Non-blocking, simple output streaming | Backend |
 | D-020 | 2026-07-12 | soundfile for WAV, pydub for MP3 | Covers required formats with minimal deps | Backend |
 | D-021 | 2026-07-12 | Volume as gain factor on float32 audio | Consistent with capture pipeline dtype | Backend |
+<<<<<<< HEAD
+=======
+| D-022 | 2026-07-12 | NexusConfig persisted to JSON | Simple, human-editable, no extra runtime deps | Backend |
+| D-023 | 2026-07-12 | CustomTkinter for settings UI | Native Windows look, fast to implement | Backend |
+| D-024 | 2026-07-12 | Default TTS voice: en_US-lessac-medium | Good Estonian/English coverage in Piper | Backend |
+| D-025 | 2026-07-12 | Default STT language: et | Primary user language is Estonian | Backend |
+>>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 
 ---
 
@@ -87,6 +99,7 @@
 
 ## 5. Current Sprint Context
 
+<<<<<<< HEAD
 **Current Task:** ARCH-003 — Camera / Vision Service (next in queue)
 
 **Most recently completed:** ARCH-002 — Audio Playback Service
@@ -95,13 +108,32 @@
 - `src/audio/playback.py` — `AudioPlayback` with PyAudio write-thread, queue, volume, file support
 - `tests/test_audio.py` — 9 new playback tests added (28 total passing)
 - `requirements.txt` — added `pydub` for MP3 support
+=======
+**Current Task:** ARCH-009 — UI Settings Panel
+
+**Most recently completed:** ARCH-002 — Audio Playback Service (PR #1 open)
+
+**What was built:**
+- `src/audio/playback.py` — `AudioPlayback` with PyAudio write-thread, queue, volume, file support
+- `src/config/settings.py` — `NexusConfig` with JSON persistence
+- `src/ui/settings.py` — CustomTkinter settings window (volume, sample rate, voice, speed, language, theme)
+- `tests/test_settings.py` — 7 tests for config load/save/roundtrip
+- `tests/test_audio.py` — playback tests added (24 total passing)
+>>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 
 **Key decisions:**
 - PyAudio write-thread for non-blocking playback
 - soundfile for WAV, pydub for MP3, raw PCM via numpy
+<<<<<<< HEAD
 - Volume applied as gain factor on float32 audio
 - Graceful degradation when no speakers are available
 - Simple linear interpolation resampling for mismatched sample rates
+=======
+- CustomTkinter for settings panel (native Windows look, simple API)
+- Config persisted to `~/.nexus/config.json`
+- Volume applied as gain factor on float32 audio
+- Graceful degradation when no speakers are available
+>>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 
 **Next Task:** ARCH-003 — Camera / Vision Service
 
@@ -155,7 +187,46 @@ class VoiceActivityDetector:
 
 ### Inter-Module Data Types
 
-Same as before, with additional `AudioCaptureConfig` and `VadConfig` dataclasses.
+Same as before, with additional `AudioCaptureConfig`, `VadConfig`, and `NexusConfig` dataclasses.
+
+### Settings API
+
+```python
+# src/config/settings.py
+class NexusConfig:
+    mic_device_index: int | None = None
+    speaker_device_index: int | None = None
+    sample_rate: int = 16000
+    playback_volume: float = 0.8
+    tts_voice: str = "en_US-lessac-medium"
+    tts_speed: float = 1.0
+    stt_model_size: str = "base"
+    stt_language: str = "et"
+    llm_model: str = "llama3.1"
+    llm_temperature: float = 0.7
+    llm_max_tokens: int = 2048
+    ollama_url: str = "http://localhost:11434"
+    camera_index: int = 0
+    camera_resolution: tuple[int, int] = (640, 480)
+    camera_fps: int = 15
+    memory_path: str = "~/.nexus/memory"
+    theme: str = "dark"
+    language: str = "et"
+
+    def save(self, path: Path | str | None = None) -> None
+    @classmethod
+    def load(cls, path: Path | str | None = None) -> NexusConfig
+```
+
+### UI Settings Panel API
+
+```python
+# src/ui/settings.py
+class SettingsWindow(ctk.CTk):
+    def __init__(self, config: NexusConfig | None = None, on_save: Callable[[NexusConfig], None] | None = None): ...
+
+def open_settings(on_save: Callable[[NexusConfig], None] | None = None) -> SettingsWindow
+```
 
 ### Audio Playback API
 
