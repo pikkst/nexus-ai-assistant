@@ -26,7 +26,7 @@
 | Main Pipeline | ⏳ In Progress (INTEGRATION-001) |
 | Packaging | 📋 Planned |
 | Runtime State Machine | ⏳ In Progress (CORE-001) |
-| Tool Execution & Permissions | 📋 Planned (TOOLS-001) |
+| Tool Execution & Permissions | ⏳ In Progress (TOOLS-001) |
 | Goals & Resumable Tasks | 📋 Planned (TASKS-001) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
 | Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
@@ -73,6 +73,9 @@
 | D-044 | 2026-07-13 | RuntimeStateMachine is the sole authority for runtime state | Validated transitions prevent UI, face, and services from presenting contradictory activity | Integration |
 | D-045 | 2026-07-13 | State events include previous state, current state, metadata, and UTC timestamp | Consumers can render and audit transitions without reading mutable runtime internals | Integration |
 | D-046 | 2026-07-13 | Face emotion is derived through a state adapter | The existing face stays decoupled from orchestration while reflecting truthful runtime state | Integration |
+| D-047 | 2026-07-13 | Every tool declares one of four explicit risk levels | Read-only, local-write, external, and destructive actions can follow different confirmation policy | Integration |
+| D-048 | 2026-07-13 | ToolRegistry returns structured failures while propagating cancellation | Callers can recover from validation, permission, timeout, and execution errors without hiding user cancellation | Integration |
+| D-049 | 2026-07-13 | Tool audit stores redacted inputs and status but never tool output | Local accountability is preserved without copying file contents or secrets into logs | Integration |
 
 ---
 
@@ -119,11 +122,18 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** CORE-001 — Assistant Runtime State Machine
+**Current Task:** TOOLS-001 — Tool Protocol, Registry & Permissions
 
 **Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
+- `src/tools/models.py` — typed tool, request, result, descriptor, risk, and error contracts
+- `src/tools/permissions.py` — configurable allow, confirm, and deny decisions by risk level
+- `src/tools/registry.py` — discovery, validation, timeout, cancellation, invocation, and audit flow
+- `src/tools/audit.py` — append-only JSONL audit with recursive sensitive-key redaction
+- `src/tools/filesystem.py` — sandboxed directory listing, text reading, and project inspection
+- `src/tools/factory.py` — ready-to-use built-in project registry construction
+- `tests/test_tools_registry.py` and `tests/test_tools_filesystem.py` — permission, lifecycle, privacy, sandbox, and end-to-end tool tests
 - `src/app/state_machine.py` — authoritative transition table, validation, interruption, and subscriber delivery
 - `src/app/events.py` — expanded typed states and transition events with previous state and UTC timestamp
 - `src/app/face_state.py` — runtime-state to face-emotion adapter compatible with `NexusFace`
@@ -213,11 +223,11 @@
 
 **New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`, `EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
 
-**CORE-001 validation:** 144 tests pass. Ruff and mypy are configured in
+**TOOLS-001 validation:** 156 tests pass. Ruff and mypy are configured in
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
-**Next Task after merge:** TOOLS-001 — Tool Protocol, Registry & Permissions
+**Next Task after merge:** TASKS-001 — Goals, Plans & Resumable Tasks
 
 ---
 
@@ -486,6 +496,33 @@ The state machine supports STOPPED, IDLE, LISTENING, UNDERSTANDING, PLANNING, AC
 VERIFYING, SPEAKING, WAITING_CONFIRMATION, BLOCKED, ERROR, and SLEEPING. Every transition is
 validated before mutation and emits previous/current state metadata. Optional speech services
 degrade independently so text interaction remains usable.
+
+---
+
+### Tool Registry API
+
+```python
+class RiskLevel(Enum):
+    READ_ONLY = "read_only"
+    LOCAL_WRITE = "local_write"
+    EXTERNAL = "external"
+    DESTRUCTIVE = "destructive"
+
+class ToolRegistry:
+    def register(self, tool: Tool) -> None
+    def discover(self) -> tuple[ToolDescriptor, ...]
+    async def invoke(
+        self, request: ToolRequest, *, confirmed: bool = False,
+        timeout: float | None = None,
+    ) -> ToolResult
+
+def create_project_tool_registry(project_root: Path | str, ...) -> ToolRegistry
+```
+
+Built-in tools are `filesystem.list_directory`, `filesystem.read_text`, and `project.inspect`.
+Resolved paths must remain within the configured project root. Local-write, external, and
+destructive tools require confirmation by default. Every attempted invocation creates a redacted
+JSONL audit entry, including rejected, failed, timed-out, and cancelled requests.
 
 ---
 

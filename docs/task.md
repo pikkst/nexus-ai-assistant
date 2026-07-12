@@ -553,7 +553,7 @@ so that listening, planning, acting, waiting, and failure states are understanda
 
 ### Task: TOOLS-001 — Tool Protocol, Registry & Permissions
 
-**Status:** 📋 BACKLOG
+**Status:** ⏳ IN PROGRESS
 
 ---
 
@@ -571,12 +571,12 @@ so that it can act without hiding risky or destructive operations.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Typed Tool, ToolRequest, ToolResult, and ToolError contracts
-- [ ] **AC-2:** Registry supports discovery, validation, invocation, timeout, and cancellation
-- [ ] **AC-3:** Risk classes distinguish read-only, local-write, external, and destructive actions
-- [ ] **AC-4:** Permission policy requires confirmation according to configured risk level
-- [ ] **AC-5:** Initial read-only filesystem and project-inspection tools are implemented
-- [ ] **AC-6:** Every invocation produces a local audit record without leaking secrets
+- [x] **AC-1:** Typed Tool, ToolRequest, ToolResult, and ToolError contracts
+- [x] **AC-2:** Registry supports discovery, validation, invocation, timeout, and cancellation
+- [x] **AC-3:** Risk classes distinguish read-only, local-write, external, and destructive actions
+- [x] **AC-4:** Permission policy requires confirmation according to configured risk level
+- [x] **AC-5:** Initial read-only filesystem and project-inspection tools are implemented
+- [x] **AC-6:** Every invocation produces a local audit record without leaking secrets
 
 ## Definition of Done
 
