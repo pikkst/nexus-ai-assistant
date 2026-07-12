@@ -27,6 +27,7 @@ class TestNexusConfigDefaults:
         assert config.memory_storage_format == "json"
         assert config.memory_max_entries == 1000
         assert config.memory_max_age_days == 90
+        assert config.tasks_path.endswith(".nexus\\tasks") or config.tasks_path.endswith(".nexus/tasks")
 
 
 class TestNexusConfigPersistence:
@@ -50,6 +51,7 @@ class TestNexusConfigPersistence:
             enable_audio_output=False,
             enable_memory=False,
             face_theme="cosmic",
+            tasks_path="data/tasks.json",
         )
         out = tmp_path / "config.json"
         config.save(out)
@@ -66,6 +68,7 @@ class TestNexusConfigPersistence:
         assert not loaded.enable_audio_output
         assert not loaded.enable_memory
         assert loaded.face_theme == "cosmic"
+        assert loaded.tasks_path == "data/tasks.json"
         assert loaded.camera_resolution == (640, 480)
 
     def test_load_missing_returns_defaults(self, tmp_path: Path) -> None:

@@ -51,6 +51,9 @@ class NexusConfig:
     memory_max_entries: int = 1000
     memory_max_age_days: int = 90
 
+    # Tasks
+    tasks_path: str = str(Path("~/.nexus/tasks").expanduser())
+
     # Runtime features
     enable_audio_input: bool = True
     enable_audio_output: bool = True
