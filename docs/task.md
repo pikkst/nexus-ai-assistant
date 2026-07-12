@@ -387,7 +387,7 @@ so that I can see the assistant’s state and interact with it intuitively.
 
 ### Task: INTEGRATION-001 — Main Application & Pipeline
 
-**Status:** 📋 BACKLOG
+**Status:** ⏳ IN PROGRESS
 
 **EST:** 8 SP
 
@@ -405,12 +405,12 @@ so that I can speak to the assistant and receive a spoken response.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Bootstrapping flow for all major services
-- [ ] **AC-2:** Event-driven orchestration between modules
-- [ ] **AC-3:** Clean startup and shutdown lifecycle
-- [ ] **AC-4:** Configuration-driven wiring for enabled or disabled features
-- [ ] **AC-5:** Basic error recovery and logging across modules
-- [ ] **AC-6:** End-to-end smoke test for a simple request-response cycle
+- [x] **AC-1:** Bootstrapping flow for all major services
+- [x] **AC-2:** Event-driven orchestration between modules
+- [x] **AC-3:** Clean startup and shutdown lifecycle
+- [x] **AC-4:** Configuration-driven wiring for enabled or disabled features
+- [x] **AC-5:** Basic error recovery and logging across modules
+- [x] **AC-6:** End-to-end smoke test for a simple request-response cycle
 
 ## Definition of Done
 

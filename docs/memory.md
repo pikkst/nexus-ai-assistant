@@ -23,7 +23,7 @@
 | Memory Store | ✅ Complete (JSON persistence, similarity search, pruning) |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
 | User Interface | 📋 Planned |
-| Main Pipeline | 📋 Planned |
+| Main Pipeline | ⏳ In Progress (INTEGRATION-001) |
 | Packaging | 📋 Planned |
 
 **Legend:** ✅ Done | ⏳ In Progress | 📋 Planned | ❌ Not Started | 🚫 Blocked
@@ -56,6 +56,9 @@
 | D-033 | 2026-07-12 | Ollama newline-delimited JSON streaming | Native backend protocol and incremental UI-ready output | Backend |
 | D-034 | 2026-07-12 | JSON memory store with token cosine similarity | Dependency-free, transparent local persistence suitable for small conversation histories | Backend |
 | D-035 | 2026-07-12 | Atomic writes plus age/capacity pruning | Avoid partial files and bound local storage growth | Backend |
+| D-036 | 2026-07-13 | Central NexusRuntime owns the request-response lifecycle | Keeps audio, STT, memory, LLM, TTS, playback, and future UI consumers behind one testable orchestration boundary | Integration |
+| D-037 | 2026-07-13 | Runtime dependencies use small protocols and constructor injection | End-to-end behavior can be tested without hardware, model files, or a live Ollama backend | Integration |
+| D-038 | 2026-07-13 | STT, TTS, capture, and playback are optional runtime services | Missing local hardware or models must not prevent text interaction from working | Integration |
 
 ---
 
@@ -102,11 +105,19 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** ARCH-008 — User Interface
+**Current Task:** INTEGRATION-001 — Main Application & Pipeline
 
 **Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
+- `src/app/runtime.py` — event-driven `NexusRuntime` for text and captured-audio requests
+- `src/app/factory.py` — configuration-driven construction of audio, STT, LLM, memory, TTS, and playback services
+- `src/app/events.py` — observable runtime state and event contracts for the future UI
+- `src/app/contracts.py` — injectable service protocols for hardware-free integration testing
+- `src/app/lifecycle.py` — graceful optional-service startup and shutdown helpers
+- `src/main.py` — minimal interactive local text shell with clean lifecycle handling
+- `tests/test_app.py` and `tests/test_app_factory.py` — end-to-end, audio, lifecycle, recovery, and configuration smoke tests
+- `src/config/settings.py` — persisted audio-input, audio-output, and memory feature toggles
 - `src/memory/store.py` — thread-safe JSON memory service with atomic persistence, token-frequency cosine search, metadata, and timestamps
 - `tests/test_memory.py` — tests for storage, retrieval ranking, custom paths, corrupt data, and age/capacity pruning
 - `src/config/settings.py` — configurable memory storage format, capacity, and maximum age
@@ -155,7 +166,11 @@
 - Segment confidence renamed to speech_probability (1.0 - no_speech_prob proxy)
 - transcribe_stream no longer mutates instance callbacks (thread-safe per-call overrides)
 
-**Next Task:** ARCH-008 — User Interface
+**INTEGRATION-001 validation:** 126 tests pass. Ruff and mypy are configured in
+`pyproject.toml` but are not installed in the current environment. All new Python files compile,
+stay within the project's 150-line limit, and `git diff --check` passes.
+
+**Next Task after merge:** CORE-001 — Assistant Runtime State Machine
 
 ---
 
@@ -387,6 +402,33 @@ The configured fallback voice is tried when the primary voice is missing or unsu
 
 ---
 
+### Main Application Runtime API
+
+```python
+# src/app/runtime.py
+class RuntimeServices:
+    llm: LLMService
+    memory: MemoryService | None
+    capture: CaptureService | None
+    playback: PlaybackService | None
+    stt: STTService | None
+    tts: TTSService | None
+
+class NexusRuntime:
+    def subscribe(self, callback: Callable[[RuntimeEvent], None]) -> None
+    async def start(self) -> None
+    async def stop(self) -> None
+    async def handle_text(self, text: str) -> str
+    async def handle_audio(self, audio: np.ndarray) -> str
+
+def create_runtime(config: NexusConfig | None = None) -> NexusRuntime
+```
+
+The runtime emits IDLE, LISTENING, UNDERSTANDING, THINKING, SPEAKING, ERROR, and
+STOPPED events. Optional speech services degrade independently so text interaction remains usable.
+
+---
+
 ## 7. Completed Tasks
 
 | Task ID | Name | Completed | By |
@@ -405,5 +447,5 @@ The configured fallback voice is tried when the primary voice is missing or unsu
 
 ---
 
-> **Last updated:** 2026-07-12
+> **Last updated:** 2026-07-13
 > **Maintainer:** Documentation Agent
