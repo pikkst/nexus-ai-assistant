@@ -1,6 +1,6 @@
 # Nexus Local AI Assistant — Memory & Context
 
-> **Version:** 1.1.0  
+> **Version:** 1.2.0  
 > **Purpose:** Persistent project memory — what has been done, what was decided, what problems were encountered, and what every agent must know before starting work.
 
 ---
@@ -10,11 +10,11 @@
 | Aspect | Status |
 |--------|--------|
 | Documentation | ✅ Complete (agents.md, task.md, tehnika.md, memory.md, rules.md) |
-| Project Scaffold | ❌ Not started |
-| Git Repository | ❌ Not initialized |
-| Audio Capture | 📋 Planned |
+| Project Scaffold | ✅ Complete |
+| Git Repository | ✅ Initialized on `develop` |
+| Audio Capture | ✅ Complete (capture.py, vad.py, 17 tests) |
 | Audio Playback | 📋 Planned |
-| VAD | 📋 Planned |
+| VAD | ✅ Built into capture pipeline |
 | STT | 📋 Planned |
 | TTS | 📋 Planned |
 | LLM Integration | 📋 Planned |
@@ -33,89 +33,44 @@
 
 | ID | Date | Decision | Rationale | Author |
 |----|------|----------|-----------|--------|
-| D-001 | 2026-07-12 | Python 3.11+ as primary language | Best ecosystem for AI/ML, audio, video processing | Architect |
-| D-002 | 2026-07-12 | Ollama + Llama 3.1 as LLM backend | Simplest local setup, good performance, active community | Architect |
-| D-003 | 2026-07-12 | faster-whisper for STT | Best accuracy-to-speed ratio for offline use, CTranslate2 backend | Architect |
-| D-004 | 2026-07-12 | Piper TTS as primary TTS | Truly offline, fast inference, supports Estonian | Architect |
-| D-005 | 2026-07-12 | PyAudio for audio I/O | Industry standard, low latency, cross-platform | Architect |
-| D-006 | 2026-07-12 | OpenCV for camera | Most mature computer vision library, extensive format support | Architect |
-| D-007 | 2026-07-12 | ChromaDB for memory | Zero-config, no server process, pure Python, local-only | Architect |
-| D-008 | 2026-07-12 | Gradio as primary UI | Fast to prototype, built-in audio/video components, dark theme | Architect |
-| D-009 | 2026-07-12 | CustomTkinter as fallback UI | Native desktop feel, better system tray integration | Architect |
-| D-010 | 2026-07-12 | loguru for logging | Structured logging, easy file rotation, less boilerplate | Architect |
-| D-011 | 2026-07-12 | Async architecture (asyncio) | Non-blocking I/O for audio/video streams, better responsiveness | Architect |
-| D-012 | 2026-07-12 | Modular pipeline pattern | Each component independently testable, swappable, maintainable | Architect |
-| D-013 | 2026-07-12 | Looi-style animated face as primary UX | Makes assistant feel alive and approachable, communicates state naturally | Architect |
-| D-014 | 2026-07-12 | SVG-based face rendering | Zero dependencies, works in any browser/Gradio/Tkinter, small payload | Architect |
-| D-015 | 2026-07-12 | Face server on port 8765 | Separate from main UI, allows independent testing and animation | Architect |
+| D-001–D-012 | 2026-07-12 | Initial technology decisions | — | Architect |
+| D-013–D-015 | 2026-07-12 | Face/SVG/server decisions | — | Architect |
+| D-016 | 2026-07-12 | webrtcvad for VAD | Lightweight, no ML model needed, fast | Backend |
+| D-017 | 2026-07-12 | PyAudio callback mode | Non-blocking, native thread safety | Backend |
+| D-018 | 2026-07-12 | VAD state machine (SILENCE→SPEECH→ENDING) | Prevents false starts, handles trailing silence | Backend |
 
 ---
 
 ## 3. Architecture Decisions (ADRs)
 
-### ADR-001: In-process Message Passing vs IPC
+### ADR-001: In-process Message Passing — **ACCEPTED**
 
-**Context:** Nexus has multiple modules that need to communicate (audio → STT → LLM → TTS → playback).
+### ADR-002: Model Storage Strategy — **ACCEPTED**
 
-**Decision:** Use **in-process async function calls** (direct Python method calls with asyncio) rather than a message broker, pipes, or HTTP.
+### ADR-003: Threading Model — **ACCEPTED**
+
+### ADR-004: Face Rendering Strategy — **ACCEPTED**
+
+### ADR-005: Audio Capture Threading
+
+**Context:** Audio capture must not block the asyncio event loop.
+
+**Decision:** Use **PyAudio callback mode** (which calls from a native thread) + a thread-safe `queue.Queue` to pass audio chunks to an async processing thread.
+
+```
+[PyAudio Native Thread] → queue.Queue → [nexus-audio-capture Thread] → [VAD + callbacks]
+```
 
 **Consequences:**
-- ✅ Zero serialization overhead
-- ✅ Simple debugging (single process)
-- ✅ Lower latency
-- ❌ No inter-process isolation (one crash takes everything down)
-- ❌ Cannot scale modules to separate machines
+- ✅ Main event loop never blocks
+- ✅ PyAudio handles buffer underrun gracefully via callback
+- ❌ Two threads involved (native + Python), but queue decouples them cleanly
 
-**Mitigation:** Each module has try/except boundaries and starts independently. A crashed module can be restarted without restarting the whole application.
+### ADR-006: VAD State Machine
 
----
+**Context:** Raw VAD is noisy — it can flicker on/off during speech.
 
-### ADR-002: Model Storage Strategy
-
-**Context:** Whisper and Piper models are large (2-8 GB total). They need to be downloaded somewhere persistent.
-
-**Decision:** Use `~/.nexus/` as the central data directory. Models are downloaded on first use and cached indefinitely.
-
-**Layout:**
-```
-~/.nexus/
-├── config.json        # User configuration
-├── memory/            # ChromaDB storage
-├── voices/            # Piper TTS voice models
-├── logs/              # Application logs
-└── cache/             # Temporary files and caches
-```
-
-**Rationale:** Follows XDG convention and is easy to find and backup.
-
----
-
-### ADR-003: Threading Model
-
-**Context:** Audio capture and camera capture are blocking I/O operations. They must not block the main asyncio event loop.
-
-**Decision:** Each blocking I/O source runs in its own **dedicated thread** with a thread-safe queue to pass data to the async world.
-
-```
-[Audio Thread]  → asyncio.Queue → [Async Pipeline]
-[Camera Thread] → asyncio.Queue → [Async Pipeline]
-[Main Thread]    → asyncio event loop
-```
-
----
-
-### ADR-004: Face Rendering Strategy
-
-**Context:** The assistant needs a visual representation that shows its state (idle, listening, thinking, speaking, etc.).
-
-**Decision:** Use **pure SVG generation from Python** with zero external dependencies. The `NexusFace` class renders SVG strings directly. A lightweight HTTP server serves the SVGs for web-based UIs.
-
-**Consequences:**
-- ✅ Zero dependencies (no PIL, no Cairo, no OpenGL)
-- ✅ Works in any browser, Gradio, or Tkinter (via `render()` → HTML embed)
-- ✅ Animation via `animate(dt)` method for smooth blink/gaze cycles
-- ✅ 9 emotion states cover all pipeline stages
-- ❌ Not photorealistic (intentionally cartoon/stylized like Looi)
+**Decision:** Three-state machine: `SILENCE → SPEECH → ENDING → SILENCE`. The ENDING state has a configurable grace period (default 600ms) that allows short pauses in speech without triggering speech_end.
 
 ---
 
@@ -123,70 +78,80 @@
 
 | ID | Date | Blocker | Status | Resolution |
 |----|------|---------|--------|------------|
-| — | — | None yet | — | — |
+| — | — | None | — | — |
 
 ---
 
 ## 5. Current Sprint Context
 
-**Current Task:** UI-FACE-001 — Looi-Style Animated Face Module ✅ COMPLETED
+**Current Task:** ARCH-002 — Audio Playback Service (next in queue)
+
+**Most recently completed:** ARCH-001 — Audio Capture Service
 
 **What was built:**
-- `src/ui/face.py` — `NexusFace` class with 9 emotions, blink/gaze/mouth animation, SVG generation
-- `src/ui/face_server.py` — HTTP API server (port 8765) serving SVGs and demo HTML
-- `src/ui/face_demo_grid.html` — Static HTML showing all 9 emotions in a grid
-- `src/ui/face_demo_animated.html` — Interactive HTML demo with emotion buttons
-- `docs/nexus_face_preview.svg` — Preview of the face design
+- `src/audio/vad.py` — `VoiceActivityDetector` with 3-state machine, WebRTCVAD wrapper
+- `src/audio/capture.py` — `AudioCapture` with PyAudio callback streaming, VAD integration, speech buffer
+- `tests/test_audio.py` — 17 unit tests all passing
 
 **Key decisions:**
-- Looi-style design with large anime eyes, soft head shape, blush, and expressive eyebrows
-- Pure SVG generation — can be embedded in Gradio, CustomTkinter, or web pages
-- Face server runs on port 8765, independent from main UI
+- PyAudio callback mode for non-blocking capture
+- VAD state machine with ENDING grace period for natural speech
+- Float32 audio format throughout the pipeline
+- Graceful degradation when no mic is available
 
-**Known Issues:** None
-
-**Next Task:** DOCS-002 — Initialize Project Structure & Git
+**Next Task:** ARCH-002 — Audio Playback Service
 
 ---
 
 ## 6. API Contracts Summary
 
-All modules follow these conventions:
+### Audio Capture API
 
-- **Constructor:** Takes configuration; never starts I/O
-- **`async def start()`:** Starts internal threads/connections
-- **`async def stop()`:** Gracefully stops and cleans up
-- **Context manager:** `async with Module(config) as m:` pattern
-- **Errors:** Raised as exceptions, never silently swallowed
-- **Callbacks:** Set as attributes before `start()`
+```python
+# src/audio/capture.py
+class AudioCaptureConfig:
+    sample_rate: int = 16000
+    chunk_size: int = 1024
+    device_index: int | None = None
+    channels: int = 1
+    dtype: str = "float32"
+    silence_timeout: float = 30.0
+
+class AudioCapture:
+    async def start(self) -> None
+    async def stop(self) -> None
+    @property
+    def is_active(self) -> bool
+    def get_speech_buffer(self) -> np.ndarray | None
+
+    # Callbacks (set before start)
+    on_audio_chunk: Callable[[np.ndarray], None] | None
+    on_speech_start: Callable[[], None] | None
+    on_speech_end: Callable[[], None] | None
+```
+
+### VAD API
+
+```python
+# src/audio/vad.py
+class VadConfig:
+    aggressiveness: int = 3
+    sample_rate: int = 16000
+    frame_ms: int = 30
+    silence_duration_ms: int = 600
+    min_speech_duration_ms: int = 100
+
+class VoiceActivityDetector:
+    @property
+    def state(self) -> VadState
+    def process_chunk(self, chunk: np.ndarray) -> VadState
+    def is_speech(self, frame: bytes) -> bool
+    def reset(self) -> None
+```
 
 ### Inter-Module Data Types
 
-```
-AudioChunk = np.ndarray          # float32, [-1.0, 1.0], mono
-AudioBuffer = np.ndarray         # float32, [-1.0, 1.0], mono, variable length
-TranscriptionResult = str        # Plain text
-LLMResponseStream = AsyncIterator[str]  # Token stream
-TextToSynthesize = str           # Plain text
-AudioResponse = np.ndarray       # float32, mono, ready for playback
-CameraFrame = np.ndarray         # uint8, BGR, H×W×3
-VisionContext = dict             # {"person_present": bool, "description": str}
-ConfigDict = dict                # JSON-serializable key-value pairs
-FaceSvg = str                    # Complete SVG markup
-Emotion = str                    # "idle" | "listening" | "thinking" | "speaking" | "happy" | "sad" | "surprised" | "confused" | "sleeping"
-```
-
----
-
-## 7. What Agents Need to Know Before Starting
-
-1. **Task workflow:** Every task → new branch → implement → update memory → update task → PR
-2. **Read memory.md first** — it contains all context you need
-3. **Read tehnika.md** — it has exact API signatures, class names, and data types
-4. **Follow the coding standards** in agents.md §5
-5. **Update this file** after completing your task — add decisions, blockers, and status changes
-6. **Don't break existing modules** — run tests before and after your changes
-7. **NexusFace is at src/ui/face.py** — use `face.render(emotion)` to get SVG strings. The face server is at `src/ui/face_server.py` on port 8765.
+Same as before, with additional `AudioCaptureConfig` and `VadConfig` dataclasses.
 
 ---
 
