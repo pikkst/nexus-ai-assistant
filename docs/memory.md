@@ -27,7 +27,7 @@
 | Main Pipeline | ⏳ In Progress (INTEGRATION-001) |
 | Packaging | 📋 Planned |
 | Runtime State Machine | ⏳ In Progress (CORE-001) |
-| Tool Execution & Permissions | 📋 Planned (TOOLS-001) |
+| Tool Execution & Permissions | ⏳ In Progress (TOOLS-001) |
 | Goals & Resumable Tasks | 📋 Planned (TASKS-001) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
 | Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
@@ -76,6 +76,9 @@
 | D-046 | 2026-07-13 | Face emotion is derived through a state adapter | The existing face stays decoupled from orchestration while reflecting truthful runtime state | Integration |
 | D-047 | 2026-07-13 | Face themes are palette/render-style presets over the existing SVG engine | Themes preserve emotions and animation without introducing bitmap assets or duplicate renderers | UI |
 | D-048 | 2026-07-13 | Classic remains the default and unknown themes fail validation | Existing consumers remain compatible and invalid persisted values cannot silently alter rendering | UI |
+| D-049 | 2026-07-13 | Every tool declares one of four explicit risk levels | Read-only, local-write, external, and destructive actions can follow different confirmation policy | Integration |
+| D-050 | 2026-07-13 | ToolRegistry returns structured failures while propagating cancellation | Callers can recover from validation, permission, timeout, and execution errors without hiding user cancellation | Integration |
+| D-051 | 2026-07-13 | Tool audit stores redacted inputs and status but never tool output | Local accountability is preserved without copying file contents or secrets into logs | Integration |
 
 ---
 
@@ -122,11 +125,18 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** UI-FACE-002 — Selectable Face Themes (stacked on CORE-001)
+**Current Task:** TOOLS-001 — Tool Protocol, Registry & Permissions
 
 **Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
+- `src/tools/models.py` — typed tool, request, result, descriptor, risk, and error contracts
+- `src/tools/permissions.py` — configurable allow, confirm, and deny decisions by risk level
+- `src/tools/registry.py` — discovery, validation, timeout, cancellation, invocation, and audit flow
+- `src/tools/audit.py` — append-only JSONL audit with recursive sensitive-key redaction
+- `src/tools/filesystem.py` — sandboxed directory listing, text reading, and project inspection
+- `src/tools/factory.py` — ready-to-use built-in project registry construction
+- `tests/test_tools_registry.py` and `tests/test_tools_filesystem.py` — permission, lifecycle, privacy, sandbox, and end-to-end tool tests
 - `src/ui/face_themes.py` — classic, neon blue, pixel, red alert, and cosmic theme presets
 - `src/ui/face.py` — runtime theme switching, glow effects, and pixel eye/mouth rendering
 - `src/ui/face_server.py` — theme query support, discovery endpoint, and persisted default loading
@@ -219,16 +229,27 @@
 9. `UI-008` — unified companion workspace
 10. `ARCH-010` and `OPS-001` — reliable installation and distribution
 
-**New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`, `EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
+**New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TOOLS-002`, `TOOLS-003`,
+`WEB-001`, `CONNECTOR-001`, `CONNECTOR-002`, `CONNECTOR-003`, `CONNECTOR-004`,
+`CONNECTOR-005`, `PLUGIN-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`,
+`EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
 
-**UI-FACE-002 validation:** 155 tests pass. Ruff and mypy are configured in
+**External capability implementation order:**
+
+1. `TASKS-001` — persistent goals and resumable plans
+2. `TOOLS-002` — LLM tool selection through the existing registry
+3. `TOOLS-003` — sandboxed local development work
+4. `WEB-001` — cited web research
+5. `CONNECTOR-001` — credential vault and OAuth foundation
+6. `CONNECTOR-002` and `CONNECTOR-003` — Gmail and Google Calendar
+7. `CONNECTOR-004` and `CONNECTOR-005` — Telegram and LinkedIn-assisted workflows
+8. `PLUGIN-001` — third-party MCP and plugin discovery
+
+**TOOLS-001 validation:** 167 tests pass. Ruff and mypy are configured in
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
-**Branch note:** `feature/face-themes` is stacked on the local CORE-001 commit. Merge CORE-001 into
-`develop` before opening the face-theme PR, then rebase the theme branch onto updated `develop`.
-
-**Next Task after both merges:** TOOLS-001 — Tool Protocol, Registry & Permissions
+**Next Task after merge:** TASKS-001 — Goals, Plans & Resumable Tasks
 
 ---
 
@@ -497,6 +518,33 @@ The state machine supports STOPPED, IDLE, LISTENING, UNDERSTANDING, PLANNING, AC
 VERIFYING, SPEAKING, WAITING_CONFIRMATION, BLOCKED, ERROR, and SLEEPING. Every transition is
 validated before mutation and emits previous/current state metadata. Optional speech services
 degrade independently so text interaction remains usable.
+
+---
+
+### Tool Registry API
+
+```python
+class RiskLevel(Enum):
+    READ_ONLY = "read_only"
+    LOCAL_WRITE = "local_write"
+    EXTERNAL = "external"
+    DESTRUCTIVE = "destructive"
+
+class ToolRegistry:
+    def register(self, tool: Tool) -> None
+    def discover(self) -> tuple[ToolDescriptor, ...]
+    async def invoke(
+        self, request: ToolRequest, *, confirmed: bool = False,
+        timeout: float | None = None,
+    ) -> ToolResult
+
+def create_project_tool_registry(project_root: Path | str, ...) -> ToolRegistry
+```
+
+Built-in tools are `filesystem.list_directory`, `filesystem.read_text`, and `project.inspect`.
+Resolved paths must remain within the configured project root. Local-write, external, and
+destructive tools require confirmation by default. Every attempted invocation creates a redacted
+JSONL audit entry, including rejected, failed, timed-out, and cancelled requests.
 
 ---
 
