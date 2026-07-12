@@ -216,6 +216,38 @@ so that I can understand user requests and respond meaningfully.
 
 ---
 
+## Task Description
+
+Implement a local speech-to-text engine that converts microphone audio into text transcripts for the Nexus assistant pipeline.
+
+## User Story
+
+As the Nexus assistant,
+I need reliable speech recognition
+so that I can understand user requests and respond meaningfully.
+
+## Acceptance Criteria
+
+- [ ] **AC-1:** STT service that accepts audio chunks or a live microphone stream
+- [ ] **AC-2:** Configurable model size and language settings
+- [ ] **AC-3:** Support for partial and final transcript callbacks
+- [ ] **AC-4:** Low-latency processing suitable for interactive use
+- [ ] **AC-5:** Graceful fallback when the model is unavailable or cannot load
+- [ ] **AC-6:** Unit tests for audio preprocessing and transcript handling
+
+## Definition of Done
+
+- STT can process sample audio and return structured transcript output
+- The module integrates cleanly with the audio capture pipeline
+- Tests for successful and failed recognition flows pass
+- PR created from `feature/speech-to-text-engine` into `develop`
+
+---
+
+**EST:** 8 SP
+
+---
+
 ### Task: ARCH-005 — Text-to-Speech Engine
 
 **Status:** 📋 BACKLOG

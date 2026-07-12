@@ -107,10 +107,10 @@
 - `tests/test_stt.py` — 54 tests covering config, state management, transcription, callbacks, error handling, audio validation, compute type resolution, and audio preprocessing
 - `src/stt/__init__.py` — exports STTEngine, STTConfig, TranscriptionResult, Segment, STTState
 - `src/audio/capture.py` — AudioCapture with PyAudio callback mode, VAD integration, background thread
-- `src/audio/playback.py` — AudioPlayback with queue-based non-blocking playback, volume control
-- `src/vision/camera.py` — CameraCapture with OpenCV, background thread, callback/queue API
+- `src/audio/playback.py` — `AudioPlayback` with PyAudio write-thread, queue-based non-blocking playback, volume control, and file support
+- `src/vision/camera.py` — `CameraCapture` with OpenCV, background thread, callback/queue API, and graceful camera-unavailability handling
 - `src/config/settings.py` — NexusConfig with JSON persistence
-- `src/ui/settings.py` — CustomTkinter settings window
+- `src/ui/settings.py` — CustomTkinter settings window with audio device selection
 - `tests/test_audio.py` — 28 audio tests (VAD + capture + playback)
 - `tests/test_vision.py` — 11 camera tests
 - `tests/test_settings.py` — 7 config tests
@@ -124,7 +124,11 @@
 - soundfile for WAV, pydub for MP3
 - CustomTkinter for settings panel
 - Config persisted to `~/.nexus/config.json`
-- OpenCV for camera capture with graceful fallback
+- Volume applied as a gain factor on float32 audio
+- Graceful degradation when no speakers are available
+- Audio device enumeration via PyAudio with "Default" fallback
+- OpenCV for camera capture with optional import and graceful fallback
+- Camera runs in a daemon thread named `nexus-camera-capture`
 - Audio input validation: 1-D float32 mono required, non-empty, finite values only
 - compute_type validated per device: int8_float16/int16 honored where supported, invalid values fall back with warning
 - Segment confidence renamed to speech_probability (1.0 - no_speech_prob proxy)
