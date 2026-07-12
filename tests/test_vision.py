@@ -157,6 +157,33 @@ class TestCameraCapture:
         assert frames_received[0].shape == (240, 320, 3)
 
     @pytest.mark.asyncio
+    async def test_read_exception_handled(self) -> None:
+        """Camera read exceptions should be caught and not crash the thread."""
+        camera = CameraCapture()
+        good_frame = np.zeros((240, 320, 3), dtype=np.uint8)
+        mock_cap = MagicMock()
+        mock_cap.isOpened.return_value = True
+        mock_cap.read.side_effect = [RuntimeError("device unplugged"), (True, good_frame)]
+        mock_cap.get.side_effect = [320.0, 240.0, 15.0]
+
+        mock_cv2 = MagicMock()
+        mock_cv2.VideoCapture.return_value = mock_cap
+        mock_cv2.CAP_PROP_FRAME_WIDTH = 3
+        mock_cv2.CAP_PROP_FRAME_HEIGHT = 4
+        mock_cv2.CAP_PROP_FPS = 5
+
+        with patch.dict("sys.modules", {"cv2": mock_cv2}):
+            with patch("logging.getLogger") as mock_logger:
+                logger = mock_logger.return_value
+                await camera.start()
+                assert camera.is_active
+                import time
+
+                time.sleep(0.15)
+                await camera.stop()
+                logger.warning.assert_called()
+
+    @pytest.mark.asyncio
     async def test_get_frame_from_queue(self) -> None:
         """get_frame() returns frames from the internal queue."""
         camera = CameraCapture()

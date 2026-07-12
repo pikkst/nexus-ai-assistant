@@ -61,7 +61,7 @@ class CameraCapture:
         self._cap: Any = None
         self._thread: threading.Thread | None = None
         self._running = threading.Event()
-        self._frame_queue: queue.Queue[np.ndarray | None] | None = None
+        self._frame_queue: queue.Queue[np.ndarray] | None = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -111,10 +111,6 @@ class CameraCapture:
         self._running.clear()
 
         if self._thread and self._thread.is_alive():
-            try:
-                self._frame_queue.put_nowait(None)
-            except Exception:
-                pass
             self._thread.join(timeout=2.0)
 
         if self._cap is not None:
@@ -138,10 +134,7 @@ class CameraCapture:
         if self._frame_queue is None:
             return None
         try:
-            frame = self._frame_queue.get(timeout=timeout)
-            if frame is None:
-                return None
-            return frame
+            return self._frame_queue.get(timeout=timeout)
         except Exception:
             return None
 
@@ -166,9 +159,18 @@ class CameraCapture:
         fq = self._frame_queue
 
         while self._running.is_set():
-            ret, frame = cap.read()
+            try:
+                ret, frame = cap.read()
+            except Exception as e:
+                logger.warning("Camera read failed: %s", e)
+                if not self._running.is_set():
+                    break
+                continue
+
             if not ret:
                 logger.warning("Failed to read frame from camera.")
+                if not self._running.is_set():
+                    break
                 continue
 
             if self.on_frame is not None:
@@ -179,11 +181,13 @@ class CameraCapture:
 
             try:
                 fq.put_nowait(frame)
-            except Exception:
+            except queue.Full:
                 # Queue full — drop oldest
                 try:
                     fq.get_nowait()
                 except Exception:
                     pass
-                fq.put_nowait(frame)
-
+                try:
+                    fq.put_nowait(frame)
+                except Exception:
+                    pass
