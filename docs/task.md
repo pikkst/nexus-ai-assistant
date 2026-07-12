@@ -668,7 +668,7 @@ so that it can perform useful programming work without unrestricted system acces
 
 ### Task: WEB-001 — Web Research & Source Management
 
-**Status:** 📋 BACKLOG
+**Status:** 🔀 IN REVIEW
 
 ---
 
@@ -685,12 +685,12 @@ so that information gathering is useful, verifiable, and organized.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Search and page-open tools use configurable provider adapters
-- [ ] **AC-2:** Results retain URL, title, publication date, retrieval time, and source type
-- [ ] **AC-3:** Robots, content size, timeout, redirect, and supported-format limits are enforced
-- [ ] **AC-4:** Multiple sources can be compared and cited without fabricating attribution
-- [ ] **AC-5:** Research notes can be saved locally only through permissioned write tools
-- [ ] **AC-6:** Tests use mocked providers and cover unsafe URLs, failures, duplicates, and citations
+- [x] **AC-1:** Search and page-open tools use configurable provider adapters
+- [x] **AC-2:** Results retain URL, title, publication date, retrieval time, and source type
+- [x] **AC-3:** Robots, content size, timeout, redirect, and supported-format limits are enforced
+- [x] **AC-4:** Multiple sources can be compared and cited without fabricating attribution
+- [x] **AC-5:** Research notes can be saved locally only through permissioned write tools
+- [x] **AC-6:** Tests use mocked providers and cover unsafe URLs, failures, duplicates, and citations
 
 ## Definition of Done
 

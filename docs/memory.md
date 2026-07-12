@@ -88,6 +88,9 @@
 | D-056 | 2026-07-13 | All model-requested calls execute exclusively through ToolRegistry | Model output cannot bypass schema validation, risk policy, timeout, cancellation, or audit | Integration |
 | D-057 | 2026-07-13 | Local development commands are shell-free and explicitly allowlisted | Argument injection cannot become shell execution and unapproved programs remain unavailable | Security |
 | D-058 | 2026-07-13 | File edits are atomic and capture workspace-local pre-change snapshots | Interrupted or incorrect edits can be safely restored without writing outside the project root | Data |
+| D-059 | 2026-07-13 | Web search and page retrieval depend on provider protocols | Providers remain configurable and tests never require live network access | Integration |
+| D-060 | 2026-07-13 | Page retrieval requires an explicit robots policy and streams into a hard byte limit | Callers cannot silently skip robots decisions or download unbounded responses | Security |
+| D-061 | 2026-07-13 | Research claims may cite only URLs present in the supplied source set | Nexus rejects fabricated claim-to-source attribution before rendering references | Data |
 | D-057 | 2026-07-13 | Agent loops pause on confirmation and enforce call, repetition, timeout, and parallel-call guards | Human control and bounded execution take priority over autonomous continuation | Integration |
 
 ---
@@ -135,7 +138,10 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** TOOLS-003 — Local Development Toolset
+**Current Task:** WEB-001 — Web Research & Source Management
+
+**WEB-001 validation:** 211 tests pass. Search and page providers are mocked in the web test suite;
+no live network access is required.
 
 **TOOLS-003 validation:** 197 tests pass. Ruff is configured but is not installed in the active environment.
 
