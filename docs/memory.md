@@ -327,5 +327,5 @@ class Segment:
 
 ---
 
-> **Last updated:** 2026-07-12  
+> **Last updated:** 2026-07-12
 > **Maintainer:** Documentation Agent
