@@ -19,6 +19,7 @@ class TestNexusConfigDefaults:
         assert config.stt_language == "et"
         assert config.language == "et"
         assert config.theme == "dark"
+        assert config.face_theme == "classic"
         assert config.camera_index == 0
         assert config.ollama_url == "http://localhost:11434"
         assert config.llm_model == "llama3.1"
@@ -48,6 +49,7 @@ class TestNexusConfigPersistence:
             enable_audio_input=False,
             enable_audio_output=False,
             enable_memory=False,
+            face_theme="cosmic",
         )
         out = tmp_path / "config.json"
         config.save(out)
@@ -63,6 +65,7 @@ class TestNexusConfigPersistence:
         assert not loaded.enable_audio_input
         assert not loaded.enable_audio_output
         assert not loaded.enable_memory
+        assert loaded.face_theme == "cosmic"
         assert loaded.camera_resolution == (640, 480)
 
     def test_load_missing_returns_defaults(self, tmp_path: Path) -> None:

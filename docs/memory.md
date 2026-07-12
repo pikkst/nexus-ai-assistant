@@ -22,6 +22,7 @@
 | Camera/Vision | ✅ Complete (camera.py, tests added) |
 | Memory Store | ✅ Complete (JSON persistence, similarity search, pruning) |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
+| Selectable Face Themes | ⏳ In Progress (UI-FACE-002) |
 | User Interface | 📋 Planned |
 | Main Pipeline | ⏳ In Progress (INTEGRATION-001) |
 | Packaging | 📋 Planned |
@@ -73,9 +74,11 @@
 | D-044 | 2026-07-13 | RuntimeStateMachine is the sole authority for runtime state | Validated transitions prevent UI, face, and services from presenting contradictory activity | Integration |
 | D-045 | 2026-07-13 | State events include previous state, current state, metadata, and UTC timestamp | Consumers can render and audit transitions without reading mutable runtime internals | Integration |
 | D-046 | 2026-07-13 | Face emotion is derived through a state adapter | The existing face stays decoupled from orchestration while reflecting truthful runtime state | Integration |
-| D-047 | 2026-07-13 | Every tool declares one of four explicit risk levels | Read-only, local-write, external, and destructive actions can follow different confirmation policy | Integration |
-| D-048 | 2026-07-13 | ToolRegistry returns structured failures while propagating cancellation | Callers can recover from validation, permission, timeout, and execution errors without hiding user cancellation | Integration |
-| D-049 | 2026-07-13 | Tool audit stores redacted inputs and status but never tool output | Local accountability is preserved without copying file contents or secrets into logs | Integration |
+| D-047 | 2026-07-13 | Face themes are palette/render-style presets over the existing SVG engine | Themes preserve emotions and animation without introducing bitmap assets or duplicate renderers | UI |
+| D-048 | 2026-07-13 | Classic remains the default and unknown themes fail validation | Existing consumers remain compatible and invalid persisted values cannot silently alter rendering | UI |
+| D-049 | 2026-07-13 | Every tool declares one of four explicit risk levels | Read-only, local-write, external, and destructive actions can follow different confirmation policy | Integration |
+| D-050 | 2026-07-13 | ToolRegistry returns structured failures while propagating cancellation | Callers can recover from validation, permission, timeout, and execution errors without hiding user cancellation | Integration |
+| D-051 | 2026-07-13 | Tool audit stores redacted inputs and status but never tool output | Local accountability is preserved without copying file contents or secrets into logs | Integration |
 
 ---
 
@@ -134,6 +137,11 @@
 - `src/tools/filesystem.py` — sandboxed directory listing, text reading, and project inspection
 - `src/tools/factory.py` — ready-to-use built-in project registry construction
 - `tests/test_tools_registry.py` and `tests/test_tools_filesystem.py` — permission, lifecycle, privacy, sandbox, and end-to-end tool tests
+- `src/ui/face_themes.py` — classic, neon blue, pixel, red alert, and cosmic theme presets
+- `src/ui/face.py` — runtime theme switching, glow effects, and pixel eye/mouth rendering
+- `src/ui/face_server.py` — theme query support, discovery endpoint, and persisted default loading
+- `src/ui/settings.py` and `src/config/settings.py` — persisted face-theme selection
+- `tests/test_face_themes.py` — theme, emotion, switching, pixel, palette, and validation tests
 - `src/app/state_machine.py` — authoritative transition table, validation, interruption, and subscriber delivery
 - `src/app/events.py` — expanded typed states and transition events with previous state and UTC timestamp
 - `src/app/face_state.py` — runtime-state to face-emotion adapter compatible with `NexusFace`
@@ -223,7 +231,7 @@
 
 **New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`, `EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
 
-**TOOLS-001 validation:** 156 tests pass. Ruff and mypy are configured in
+**TOOLS-001 validation:** 167 tests pass. Ruff and mypy are configured in
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
@@ -523,6 +531,26 @@ Built-in tools are `filesystem.list_directory`, `filesystem.read_text`, and `pro
 Resolved paths must remain within the configured project root. Local-write, external, and
 destructive tools require confirmation by default. Every attempted invocation creates a redacted
 JSONL audit entry, including rejected, failed, timed-out, and cancelled requests.
+
+---
+
+### Face Theme API
+
+```python
+class FaceTheme(Enum):
+    CLASSIC = "classic"
+    NEON_BLUE = "neon_blue"
+    PIXEL = "pixel"
+    RED_ALERT = "red_alert"
+    COSMIC = "cosmic"
+
+face = NexusFace(theme=FaceTheme.COSMIC)
+face.set_theme("pixel")
+svg = face.render("happy")
+```
+
+The face server accepts `theme` on render and animate requests and exposes available values through
+`GET /api/face/themes`. The animated browser demo includes a theme selector.
 
 ---
 
