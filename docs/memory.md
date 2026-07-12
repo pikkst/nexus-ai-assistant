@@ -13,17 +13,13 @@
 | Project Scaffold | ✅ Complete |
 | Git Repository | ✅ Initialized on `develop` |
 | Audio Capture | ✅ Complete (capture.py, vad.py, 17 tests) |
-<<<<<<< HEAD
 | Audio Playback | ✅ Complete (playback.py, tests added) |
-=======
-| Audio Playback | ✅ Complete (playback.py, 9 tests) — PR #1 open |
 | Settings / Config | ✅ Complete (NexusConfig, UI panel, 7 tests) |
->>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 | VAD | ✅ Built into capture pipeline |
 | STT | 📋 Planned |
 | TTS | 📋 Planned |
 | LLM Integration | 📋 Planned |
-| Camera/Vision | 📋 Planned |
+| Camera/Vision | ✅ Complete (camera.py, tests added) |
 | Memory Store | 📋 Planned |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
 | User Interface | 📋 Planned |
@@ -56,6 +52,8 @@
 >>>>>>> febf6a8 (feat(ui): add NexusConfig and settings panel (ARCH-009))
 =======
 | D-026 | 2026-07-12 | PyAudio device enumeration in settings UI | Lets user pick mic/speaker without editing config | Backend |
+| D-027 | 2026-07-12 | OpenCV for camera capture | Industry standard, simple Python API | Backend |
+| D-028 | 2026-07-12 | Camera runs in background thread | Non-blocking, consistent with audio capture | Backend |
 >>>>>>> 08230c8 (feat(ui): add audio device selection to settings panel)
 
 ---
@@ -111,8 +109,9 @@
 - `src/audio/playback.py` — `AudioPlayback` with PyAudio write-thread, queue, volume, file support
 - `src/config/settings.py` — `NexusConfig` with JSON persistence
 - `src/ui/settings.py` — CustomTkinter settings window (volume, sample rate, input/output device selection, voice, speed, language, theme)
-- `tests/test_settings.py` — 7 tests for config load/save/roundtrip
+- `src/vision/camera.py` — `CameraCapture` with OpenCV, background thread, callback/queue API, graceful camera unavailability handling
 - `tests/test_audio.py` — playback tests added (24 total passing)
+- `tests/test_vision.py` — 11 tests for camera startup, shutdown, callback, and fallback behavior
 
 **Key decisions:**
 - PyAudio write-thread for non-blocking playback
@@ -122,8 +121,10 @@
 - Volume applied as gain factor on float32 audio
 - Graceful degradation when no speakers are available
 - Audio device enumeration via PyAudio with "Default" fallback
+- OpenCV for camera capture with optional import and graceful fallback
+- Camera runs in a daemon thread named `nexus-camera-capture`
 
-**Next Task:** ARCH-003 — Camera / Vision Service
+**Next Task:** ARCH-004 — Speech-to-Text Engine
 
 ---
 

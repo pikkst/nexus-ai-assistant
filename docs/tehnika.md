@@ -330,28 +330,36 @@ VISION_CONTEXT_TEMPLATE = "Visual context from camera: {description}"
 **API:**
 
 ```python
+@dataclass
+class CameraCaptureConfig:
+    device_index: int = 0
+    width: int = 640
+    height: int = 480
+    fps: int = 15
+
 class CameraCapture:
-    def __init__(
-        self,
-        camera_index: int = 0,
-        resolution: tuple[int, int] = (640, 480),
-        fps: int = 30,
-    ): ...
+    def __init__(self, config: CameraCaptureConfig | None = None): ...
 
     async def start(self) -> None: ...
     async def stop(self) -> None: ...
-    async def read_frame(self) -> np.ndarray | None: ...
+    def get_frame(self, timeout: float = 1.0) -> np.ndarray | None: ...
+    @property
+    def is_active(self) -> bool: ...
     async def __aenter__(self) -> "CameraCapture": ...
-    async def __aexit__(self, ...) -> None: ...
+    async def __aexit__(self, *args: Any) -> None: ...
 
-    # Callback mode
     on_frame: Callable[[np.ndarray], None] | None
 ```
 
 **Threading:**
-- Camera runs in separate thread
-- Frames available via `read_frame()` (latest frame) or `on_frame` callback
-- `read_frame()` returns `None` if no camera available or not started
+- Camera runs in a background thread.
+- `on_frame` callback fires for each captured frame.
+- `get_frame()` pulls the latest frame from an internal queue.
+- `start()` returns silently if OpenCV is missing or the camera is unavailable.
+
+**Graceful Degradation:**
+- If camera unavailable → log warning, `is_active` is False.
+- Failed frame reads are logged and skipped.
 
 ---
 

@@ -136,9 +136,7 @@ so that I can respond to the user with speech.
 
 ### Task: ARCH-003 — Camera / Vision Service
 
-**Status:** 📋 BACKLOG
-
-**EST:** 5 SP
+**Status:** ✅ DONE
 
 ---
 
@@ -154,12 +152,12 @@ so that I can perceive the environment and support future vision-based interacti
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** `CameraCapture` or equivalent service that opens the default webcam
-- [ ] **AC-2:** Configurable device index, resolution, and frame rate
-- [ ] **AC-3:** Non-blocking frame capture in a background thread or worker
-- [ ] **AC-4:** Frame callback / queue API for downstream processing
-- [ ] **AC-5:** Graceful handling of missing or unavailable camera devices
-- [ ] **AC-6:** Unit tests with mocked frame sources or OpenCV stubs
+- [x] **AC-1:** `CameraCapture` or equivalent service that opens the default webcam
+- [x] **AC-2:** Configurable device index, resolution, and frame rate
+- [x] **AC-3:** Non-blocking frame capture in a background thread or worker
+- [x] **AC-4:** Frame callback / queue API for downstream processing
+- [x] **AC-5:** Graceful handling of missing or unavailable camera devices
+- [x] **AC-6:** Unit tests with mocked frame sources or OpenCV stubs
 
 ## Definition of Done
 
@@ -171,6 +169,9 @@ so that I can perceive the environment and support future vision-based interacti
 ---
 
 **EST:** 5 SP
+
+**RT:** 2026-07-12
+**QA:** 2026-07-12
 
 ---
 
