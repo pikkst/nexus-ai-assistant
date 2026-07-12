@@ -20,7 +20,7 @@
 | TTS | 📋 Planned |
 | LLM Integration | ✅ Complete (async Ollama client, prompt/history support, streaming) |
 | Camera/Vision | ✅ Complete (camera.py, tests added) |
-| Memory Store | 📋 Planned |
+| Memory Store | ✅ Complete (JSON persistence, similarity search, pruning) |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
 | User Interface | 📋 Planned |
 | Main Pipeline | 📋 Planned |
@@ -54,6 +54,8 @@
 | D-031 | 2026-07-12 | Audio preprocessing before STT | Normalize, trim silence, resample to 16kHz | Backend |
 | D-032 | 2026-07-12 | Direct async HTTP client for Ollama | Small offline API surface, injectable transport, no orchestration dependency | Backend |
 | D-033 | 2026-07-12 | Ollama newline-delimited JSON streaming | Native backend protocol and incremental UI-ready output | Backend |
+| D-034 | 2026-07-12 | JSON memory store with token cosine similarity | Dependency-free, transparent local persistence suitable for small conversation histories | Backend |
+| D-035 | 2026-07-12 | Atomic writes plus age/capacity pruning | Avoid partial files and bound local storage growth | Backend |
 
 ---
 
@@ -100,11 +102,14 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** ARCH-007 — Memory / Vector Store
+**Current Task:** ARCH-008 — User Interface
 
-**Most recently completed:** ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine, ARCH-004 — Speech-to-Text Engine
+**Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
+- `src/memory/store.py` — thread-safe JSON memory service with atomic persistence, token-frequency cosine search, metadata, and timestamps
+- `tests/test_memory.py` — tests for storage, retrieval ranking, custom paths, corrupt data, and age/capacity pruning
+- `src/config/settings.py` — configurable memory storage format, capacity, and maximum age
 - `src/llm/client.py` — async Ollama chat client, structured responses, streaming, and typed backend errors
 - `src/llm/prompts.py` — validated system prompt and conversation history construction
 - `tests/test_llm.py` — tests for prompt flow, configuration, responses, streaming, timeouts, and backend failures
@@ -124,6 +129,10 @@
 - `tests/test_settings.py` — 7 config tests
 
 **Key decisions:**
+- Store lightweight conversation memory as human-readable JSON without requiring an embedding model
+- Rank results with Unicode-aware token-frequency cosine similarity
+- Prune stale entries by age and enforce a maximum entry count after writes and loads
+- Persist through an atomic temporary-file replacement to reduce corruption risk
 - Use direct `httpx` integration with Ollama's local `/api/chat` endpoint
 - Keep request construction public and deterministic for testing and future backend adapters
 - Map backend connectivity/status errors and timeouts to separate LLM exceptions
@@ -146,7 +155,7 @@
 - Segment confidence renamed to speech_probability (1.0 - no_speech_prob proxy)
 - transcribe_stream no longer mutates instance callbacks (thread-safe per-call overrides)
 
-**Next Task:** ARCH-007 — Memory / Vector Store
+**Next Task:** ARCH-008 — User Interface
 
 ---
 
@@ -217,6 +226,9 @@ class NexusConfig:
     camera_resolution: tuple[int, int] = (640, 480)
     camera_fps: int = 15
     memory_path: str = "~/.nexus/memory"
+    memory_storage_format: str = "json"
+    memory_max_entries: int = 1000
+    memory_max_age_days: int = 90
     theme: str = "dark"
     language: str = "et"
 
@@ -224,6 +236,29 @@ class NexusConfig:
     @classmethod
     def load(cls, path: Path | str | None = None) -> NexusConfig
 ```
+
+### Memory Store API
+
+```python
+# src/memory/store.py
+class MemoryStore:
+    def __init__(
+        self,
+        path: Path | str,
+        *,
+        storage_format: str = "json",
+        max_entries: int = 1000,
+        max_age_days: int | None = 90,
+    ): ...
+    def add(self, text: str, *, metadata: dict | None = None, ...) -> MemoryEntry
+    def search(self, query: str, *, limit: int = 5) -> list[MemoryResult]
+    def prune(self, *, now: datetime | None = None, persist: bool = True) -> int
+    def save(self) -> None
+    def load(self) -> None
+```
+
+Storage is a versioned JSON document. Search uses token-frequency cosine similarity;
+cleanup combines configurable age retention with a maximum entry count.
 
 ### UI Settings Panel API
 
@@ -365,6 +400,7 @@ The configured fallback voice is tried when the primary voice is missing or unsu
 | ARCH-004 | Speech-to-Text Engine | 2026-07-12 | Backend Agent |
 | ARCH-005 | Text-to-Speech Engine | 2026-07-12 | Backend Agent |
 | ARCH-006 | LLM Integration | 2026-07-12 | Backend Agent |
+| ARCH-007 | Memory / Vector Store | 2026-07-12 | Backend Agent |
 | ARCH-009 | UI Settings Panel | 2026-07-12 | Backend Agent |
 
 ---
