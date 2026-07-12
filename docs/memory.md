@@ -143,11 +143,8 @@
 
 **Current Task:** CONNECTOR-002 — Gmail Tools
 
-**CONNECTOR-002 status:** ⏳ IN PROGRESS — branch `feature/gmail-tools` created from `develop`.
-Implementing read-only search/read tools, draft creation distinct from sending, risk-appropriate
-confirmation for send/reply/label/archive/delete, address/body/attachment validation, and redaction
-of message bodies and addresses from audit logs and memory. Mocked Gmail API tests must cover
-pagination, drafts, confirmation, failures, and duplicate sends.
+**CONNECTOR-002 validation:** 10 Gmail-specific tests pass, covering pagination, drafts, confirmation,
+failures, duplicate sends, validation, and audit redaction. Full suite: 233 tests pass.
 
 **CONNECTOR-001 validation:** 223 tests pass, including mocked connect, refresh, revoke,
 reconnect, missing-keyring, recursive-redaction, and concurrent-access coverage.
@@ -157,7 +154,7 @@ no live network access is required.
 
 **TOOLS-003 validation:** 197 tests pass. Ruff is configured but is not installed in the active environment.
 
-**Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
+**Most recently completed:** CONNECTOR-002 — Gmail Tools, ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
 - `src/llm/tool_types.py` and `LLMClient.chat` — native Ollama tool schemas, calls, and role=tool conversations
@@ -679,6 +676,7 @@ The face server accepts `theme` on render and animate requests and exposes avail
 | UI-FACE-002 | Selectable Face Themes | 2026-07-13 | UI Agent |
 | TOOLS-001 | Tool Protocol, Registry & Permissions | 2026-07-13 | Integration Agent |
 | TASKS-001 | Goals, Plans & Resumable Tasks | 2026-07-13 | Integration Agent |
+| CONNECTOR-002 | Gmail Tools | 2026-07-13 | Integration Agent |
 
 ---
 
