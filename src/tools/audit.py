@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -11,12 +12,29 @@ from typing import Any
 
 from .models import RiskLevel, ToolRequest, utc_now
 
-_SENSITIVE_PARTS = ("password", "token", "secret", "api_key", "authorization", "cookie", "body", "address", "email", "recipient", "snippet", "to", "cc", "from_address", "from", "bcc", "subject")
+_SENSITIVE_PARTS = frozenset({
+    "password", "token", "secret", "api_key", "authorization", "cookie",
+    "body", "address", "email", "recipient", "snippet", "to", "cc",
+    "from_address", "from", "bcc", "subject",
+})
+
+
+def _is_sensitive_key(key: str) -> bool:
+    """Return True for keys that hold email-sensitive data.
+
+    Uses exact key matching plus word-boundary token matching so that
+    unrelated keys containing those substrings (e.g. ``protocol``, ``config``,
+    ``format``) are not falsely redacted.
+    """
+    lowered = key.casefold()
+    if lowered in _SENSITIVE_PARTS:
+        return True
+    return any(token in _SENSITIVE_PARTS for token in re.split(r"[^0-9a-z]+", lowered) if token)
 
 
 def redact(value: Any, key: str = "") -> Any:
     """Recursively redact values whose key suggests sensitive content."""
-    if any(part in key.casefold() for part in _SENSITIVE_PARTS):
+    if _is_sensitive_key(key):
         return "[REDACTED]"
     if isinstance(value, dict):
         return {str(item_key): redact(item, str(item_key)) for item_key, item in value.items()}

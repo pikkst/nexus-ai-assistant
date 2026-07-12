@@ -50,6 +50,43 @@ class MockGmailProvider:
             )
         return message
 
+    def _sync_thread_message(self, message: GmailMessage) -> None:
+        thread = self._threads.get(message.thread_id)
+        if thread is None:
+            return
+        new_messages = tuple(msg if msg.id != message.id else message for msg in thread.messages)
+        if any(msg.id == message.id for msg in thread.messages):
+            self._threads[message.thread_id] = GmailThread(
+                id=thread.id, messages=new_messages, labels=thread.labels, snippet=thread.snippet,
+            )
+
+    async def label(self, message_id: str, *, add: tuple[str, ...] = (), remove: tuple[str, ...] = ()) -> GmailMessage:
+        message = await self.read_message(message_id)
+        labels = tuple(label for label in message.labels if label not in remove)
+        labels = labels + tuple(label for label in add if label not in labels)
+        new_message = GmailMessage(
+            id=message.id, thread_id=message.thread_id, subject=message.subject,
+            from_address=message.from_address, to_addresses=message.to_addresses,
+            cc_addresses=message.cc_addresses, snippet=message.snippet, body=message.body,
+            labels=labels, date=message.date, has_attachment=message.has_attachment,
+            attachment_metadata=message.attachment_metadata,
+        )
+        self._messages[message.id] = new_message
+        self._sync_thread_message(new_message)
+        return new_message
+
+    async def archive(self, message_id: str) -> GmailMessage:
+        return await self.label(message_id, remove=("INBOX",))
+
+    async def delete(self, message_id: str) -> None:
+        self._messages.pop(message_id, None)
+        for thread in self._threads.values():
+            if any(msg.id == message_id for msg in thread.messages):
+                new_messages = tuple(msg for msg in thread.messages if msg.id != message_id)
+                self._threads[thread.id] = GmailThread(
+                    id=thread.id, messages=new_messages, labels=thread.labels, snippet=thread.snippet,
+                )
+
     async def search_messages(self, query: str, *, limit: int, page_token: str | None = None) -> tuple[list[GmailMessage], str | None]:
         del query, page_token
         results = list(self._messages.values())[:max(limit, 1)]
@@ -132,23 +169,3 @@ class MockGmailProvider:
         )
         self.add_message(reply_message)
         return reply_message
-
-    async def label(self, message_id: str, *, add: tuple[str, ...] = (), remove: tuple[str, ...] = ()) -> GmailMessage:
-        message = await self.read_message(message_id)
-        labels = tuple(label for label in message.labels if label not in remove)
-        labels = labels + tuple(label for label in add if label not in labels)
-        new_message = GmailMessage(
-            id=message.id, thread_id=message.thread_id, subject=message.subject,
-            from_address=message.from_address, to_addresses=message.to_addresses,
-            cc_addresses=message.cc_addresses, snippet=message.snippet, body=message.body,
-            labels=labels, date=message.date, has_attachment=message.has_attachment,
-            attachment_metadata=message.attachment_metadata,
-        )
-        self._messages[message.id] = new_message
-        return new_message
-
-    async def archive(self, message_id: str) -> GmailMessage:
-        return await self.label(message_id, remove=("INBOX",))
-
-    async def delete(self, message_id: str) -> None:
-        self._messages.pop(message_id, None)
