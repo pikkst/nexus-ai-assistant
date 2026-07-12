@@ -92,9 +92,11 @@ so that I can process user speech for STT.
 
 ### Task: ARCH-002 — Audio Playback Service
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 ---
+
+
 
 ## Task Description
 
@@ -108,13 +110,13 @@ so that I can respond to the user with speech.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** `AudioPlayback` class that plays audio to default output device
-- [ ] **AC-2:** Supports WAV, MP3, and raw PCM formats
-- [ ] **AC-3:** Non-blocking playback with queue
-- [ ] **AC-4:** Volume control (0.0 to 1.0)
-- [ ] **AC-5:** Stop/ interrupt current playback
-- [ ] **AC-6:** Proper resource cleanup
-- [ ] **AC-7:** Graceful handling of missing speakers
+- [x] **AC-1:** `AudioPlayback` class that plays audio to default output device
+- [x] **AC-2:** Supports WAV, MP3, and raw PCM formats
+- [x] **AC-3:** Non-blocking playback with queue
+- [x] **AC-4:** Volume control (0.0 to 1.0)
+- [x] **AC-5:** Stop/ interrupt current playback
+- [x] **AC-6:** Proper resource cleanup
+- [x] **AC-7:** Graceful handling of missing speakers
 
 ## Definition of Done
 
@@ -125,8 +127,10 @@ so that I can respond to the user with speech.
 
 **EST:** 3 SP
 
-**RT:**
-**QA:**
+**RT:** 2026-07-12
+**QA:** 2026-07-12
+
+---
 
 ---
 
@@ -202,6 +206,7 @@ so that I can respond to the user with speech.
 | DOCS-002 | Initialize Project Structure & Git | 2026-07-12 | Documentation Agent |
 | UI-FACE-001 | Looi-Style Animated Face Module | 2026-07-12 | Documentation Agent |
 | ARCH-001 | Audio Capture Service | 2026-07-12 | Backend Agent |
+| ARCH-002 | Audio Playback Service | 2026-07-12 | Backend Agent |
 
 ---
 
