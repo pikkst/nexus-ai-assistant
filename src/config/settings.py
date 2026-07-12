@@ -58,6 +58,7 @@ class NexusConfig:
 
     # UI
     theme: str = "dark"
+    face_theme: str = "classic"
     language: str = "et"
 
     def save(self, path: Path | str | None = None) -> None:

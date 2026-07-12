@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Literal
 
+from .face_themes import FaceTheme, theme_spec
+
 
 class Emotion(Enum):
     IDLE = "idle"
@@ -32,6 +34,14 @@ class BlinkState(Enum):
     CLOSING = "closing"
     CLOSED = "closed"
     OPENING = "opening"
+
+
+_THEME_COLOR_FIELDS = (
+    "bg_color", "head_color", "head_border", "eye_white", "eye_border",
+    "iris_color", "iris_light", "iris_dark", "pupil_color", "pupil_light",
+    "highlight_color", "brow_color", "mouth_color", "blush_color",
+    "label_color", "label_sub_color",
+)
 
 
 @dataclass
@@ -56,6 +66,9 @@ class FaceConfig:
     blush_color: str = "#ff6b8a"
     label_color: str = "#888899"
     label_sub_color: str = "#666677"
+    theme: str = FaceTheme.CLASSIC.value
+    render_style: str = "smooth"
+    glow_color: str = "transparent"
 
 
 @dataclass
@@ -84,13 +97,32 @@ class NexusFace:
         svg = face.render_state(state)
     """
 
-    def __init__(self, config: FaceConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: FaceConfig | None = None,
+        theme: FaceTheme | str | None = None,
+    ) -> None:
         self.config = config or FaceConfig()
         self.state = FaceState()
+        if theme is not None or self.config.theme != FaceTheme.CLASSIC.value:
+            self.set_theme(theme or self.config.theme)
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def set_theme(self, theme: FaceTheme | str) -> None:
+        """Apply a built-in color and rendering theme."""
+        selected = FaceTheme(theme) if isinstance(theme, str) else theme
+        spec = theme_spec(selected)
+        defaults = FaceConfig()
+        for name in _THEME_COLOR_FIELDS:
+            setattr(self.config, name, getattr(defaults, name))
+        for name, value in spec.colors.items():
+            setattr(self.config, name, value)
+        self.config.theme = selected.value
+        self.config.render_style = spec.render_style
+        self.config.glow_color = spec.glow_color
 
     def render(self, emotion: Emotion | str = Emotion.IDLE) -> str:
         """Render the face as an SVG string for a given emotion.
@@ -207,7 +239,8 @@ class NexusFace:
         if s.emotion == Emotion.SLEEPING:
             sleep_svg = self._build_sleep_zs(s, cx)
 
-        return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {cfg.width} {cfg.height}" width="{cfg.width}" height="{cfg.height}">
+        shape_rendering = "crispEdges" if cfg.render_style == "pixel" else "geometricPrecision"
+        return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {cfg.width} {cfg.height}" width="{cfg.width}" height="{cfg.height}" data-theme="{cfg.theme}" shape-rendering="{shape_rendering}">
   <defs>
     <radialGradient id="irisGrad" cx="40%" cy="40%" r="50%">
       <stop offset="0%" stop-color="{cfg.iris_light}"/>
@@ -220,6 +253,9 @@ class NexusFace:
     </radialGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+    <filter id="themeGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="{cfg.glow_color}" flood-opacity="0.85"/>
     </filter>
   </defs>
 
@@ -240,14 +276,14 @@ class NexusFace:
   {brows_svg}
 
   <!-- Eyes -->
-  {eyes_svg}
+  <g filter="url(#themeGlow)">{eyes_svg}</g>
 
   <!-- Nose -->
   <path d="M{cx} {cy + 30} Q{cx - 5} {cy + 40} {cx} {cy + 45} Q{cx + 5} {cy + 40} {cx} {cy + 30}"
         fill="{cfg.head_border}" stroke="{cfg.head_border}" stroke-width="1" opacity="0.6"/>
 
   <!-- Mouth -->
-  {mouth_svg}
+  <g filter="url(#themeGlow)">{mouth_svg}</g>
 
   <!-- Sleep Z's -->
   {sleep_svg}
@@ -264,6 +300,8 @@ class NexusFace:
         lx: int, ly: int, rx: int, ry: int,
         ew: float, bh: float, gox: float, goy: float,
     ) -> str:
+        if cfg.render_style == "pixel":
+            return self._build_pixel_eyes(s, cfg, lx, ly, rx, ry, gox, goy)
         is_sleep = s.emotion == Emotion.SLEEPING
         if is_sleep:
             # Closed sleepy eyes
@@ -296,6 +334,25 @@ class NexusFace:
   <ellipse cx="{rx + gox}" cy="{ry + goy}" rx="{pupil_rx}" ry="{pupil_ry}" fill="url(#pupilGrad)"/>
   <ellipse cx="{rx + gox - 12}" cy="{ry + goy - 12}" rx="{10 * ew / 50}" ry="{12 * bh / 55}" fill="{cfg.highlight_color}" opacity="0.8"/>
   <ellipse cx="{rx + gox + 10}" cy="{ry + goy + 15}" rx="4" ry="5" fill="{cfg.highlight_color}" opacity="0.25"/>"""
+
+    def _build_pixel_eyes(
+        self, s: FaceState, cfg: FaceConfig,
+        lx: int, ly: int, rx: int, ry: int, gox: float, goy: float,
+    ) -> str:
+        """Build deliberately blocky eyes for the pixel theme."""
+        if s.emotion == Emotion.SLEEPING or s.blink != BlinkState.OPEN:
+            return f"""
+  <rect x="{lx - 32}" y="{ly - 4}" width="64" height="8" fill="{cfg.eye_white}"/>
+  <rect x="{rx - 32}" y="{ry - 4}" width="64" height="8" fill="{cfg.eye_white}"/>"""
+        left_x, right_x = int(lx + gox), int(rx + gox)
+        pupil_y = int(ly + goy)
+        return f"""
+  <rect x="{lx - 36}" y="{ly - 38}" width="72" height="76" fill="{cfg.eye_white}"/>
+  <rect x="{left_x - 14}" y="{pupil_y - 22}" width="28" height="44" fill="{cfg.pupil_color}"/>
+  <rect x="{left_x - 10}" y="{pupil_y - 18}" width="8" height="8" fill="{cfg.highlight_color}"/>
+  <rect x="{rx - 36}" y="{ry - 38}" width="72" height="76" fill="{cfg.eye_white}"/>
+  <rect x="{right_x - 14}" y="{pupil_y - 22}" width="28" height="44" fill="{cfg.pupil_color}"/>
+  <rect x="{right_x - 10}" y="{pupil_y - 18}" width="8" height="8" fill="{cfg.highlight_color}"/>"""
 
     def _build_brows(self, s: FaceState, cx: int, lx: int, ly: int, rx: int, ry: int) -> str:
         cfg = self.config
@@ -334,6 +391,12 @@ class NexusFace:
         cfg = self.config
         em = s.emotion
         mo = s.mouth_open
+
+        if cfg.render_style == "pixel":
+            height = 12 + int(mo * 28) if em == Emotion.SPEAKING else 12
+            if em == Emotion.SAD:
+                return f'<path d="M{cx - 28} {cy + 82}h8v-8h40v8h8" stroke="{cfg.mouth_color}" stroke-width="8" fill="none"/>'
+            return f'<rect x="{cx - 28}" y="{cy + 68}" width="56" height="{height}" fill="{cfg.mouth_color}"/>'
 
         if em == Emotion.SLEEPING:
             # Small open mouth
@@ -461,6 +524,7 @@ def generate_animated_demo() -> str:
     .controls button { background: #1e1e38; color: #aaaacc; border: 1px solid #2a2a44; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 13px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
     .controls button:hover { background: #2a2a44; color: #ffffff; border-color: #6ec6ff; }
     .controls button.active { background: #2a2a44; color: #6ec6ff; border-color: #6ec6ff; }
+    .theme-picker { margin: 14px 0; background: #1e1e38; color: #aaaacc; border: 1px solid #2a2a44; padding: 10px 14px; border-radius: 10px; }
     #status { color: #55556a; margin-top: 20px; font-size: 13px; }
   </style>
 </head>
@@ -477,11 +541,19 @@ def generate_animated_demo() -> str:
     <button data-emotion="confused">Confused</button>
     <button data-emotion="sleeping">Sleeping</button>
   </div>
+  <select id="theme-picker" class="theme-picker">
+    <option value="classic">Classic</option>
+    <option value="neon_blue">Neon Blue</option>
+    <option value="pixel">Pixel</option>
+    <option value="red_alert">Red Alert</option>
+    <option value="cosmic">Cosmic</option>
+  </select>
   <div id="status">Click an emotion above</div>
 
   <script>
     const EMOTIONS = ["idle","listening","thinking","speaking","happy","sad","surprised","confused","sleeping"];
     let currentEmotion = "idle";
+    let currentTheme = "classic";
     let frame = 0;
     const container = document.getElementById("face-container");
 
@@ -490,8 +562,8 @@ def generate_animated_demo() -> str:
     async function renderFace(emotion, animFrame) {
       try {
         const url = animFrame !== undefined
-          ? `/api/face/animate?emotion=${emotion}&dt=0.05`
-          : `/api/face/render?emotion=${emotion}`;
+          ? `/api/face/animate?emotion=${emotion}&theme=${currentTheme}&dt=0.05`
+          : `/api/face/render?emotion=${emotion}&theme=${currentTheme}`;
         const res = await fetch(url);
         if (!res.ok) throw new Error("Server not available");
         const svg = await res.text();
@@ -512,6 +584,11 @@ def generate_animated_demo() -> str:
         currentEmotion = btn.dataset.emotion;
         renderFace(currentEmotion, 0);
       });
+    });
+
+    document.getElementById("theme-picker").addEventListener("change", event => {
+      currentTheme = event.target.value;
+      renderFace(currentEmotion, 0);
     });
 
     // Initial render

@@ -22,6 +22,7 @@
 | Camera/Vision | ✅ Complete (camera.py, tests added) |
 | Memory Store | ✅ Complete (JSON persistence, similarity search, pruning) |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
+| Selectable Face Themes | ⏳ In Progress (UI-FACE-002) |
 | User Interface | 📋 Planned |
 | Main Pipeline | ⏳ In Progress (INTEGRATION-001) |
 | Packaging | 📋 Planned |
@@ -73,6 +74,8 @@
 | D-044 | 2026-07-13 | RuntimeStateMachine is the sole authority for runtime state | Validated transitions prevent UI, face, and services from presenting contradictory activity | Integration |
 | D-045 | 2026-07-13 | State events include previous state, current state, metadata, and UTC timestamp | Consumers can render and audit transitions without reading mutable runtime internals | Integration |
 | D-046 | 2026-07-13 | Face emotion is derived through a state adapter | The existing face stays decoupled from orchestration while reflecting truthful runtime state | Integration |
+| D-047 | 2026-07-13 | Face themes are palette/render-style presets over the existing SVG engine | Themes preserve emotions and animation without introducing bitmap assets or duplicate renderers | UI |
+| D-048 | 2026-07-13 | Classic remains the default and unknown themes fail validation | Existing consumers remain compatible and invalid persisted values cannot silently alter rendering | UI |
 
 ---
 
@@ -119,11 +122,16 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** CORE-001 — Assistant Runtime State Machine
+**Current Task:** UI-FACE-002 — Selectable Face Themes (stacked on CORE-001)
 
 **Most recently completed:** ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
+- `src/ui/face_themes.py` — classic, neon blue, pixel, red alert, and cosmic theme presets
+- `src/ui/face.py` — runtime theme switching, glow effects, and pixel eye/mouth rendering
+- `src/ui/face_server.py` — theme query support, discovery endpoint, and persisted default loading
+- `src/ui/settings.py` and `src/config/settings.py` — persisted face-theme selection
+- `tests/test_face_themes.py` — theme, emotion, switching, pixel, palette, and validation tests
 - `src/app/state_machine.py` — authoritative transition table, validation, interruption, and subscriber delivery
 - `src/app/events.py` — expanded typed states and transition events with previous state and UTC timestamp
 - `src/app/face_state.py` — runtime-state to face-emotion adapter compatible with `NexusFace`
@@ -213,11 +221,14 @@
 
 **New backlog tasks discovered:** `CORE-001`, `TOOLS-001`, `TASKS-001`, `MEM-002`, `MEM-003`, `PERSONA-001`, `EVAL-001`, `LEARN-001`, `UI-008`, and `ARCH-010`.
 
-**CORE-001 validation:** 144 tests pass. Ruff and mypy are configured in
+**UI-FACE-002 validation:** 155 tests pass. Ruff and mypy are configured in
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
-**Next Task after merge:** TOOLS-001 — Tool Protocol, Registry & Permissions
+**Branch note:** `feature/face-themes` is stacked on the local CORE-001 commit. Merge CORE-001 into
+`develop` before opening the face-theme PR, then rebase the theme branch onto updated `develop`.
+
+**Next Task after both merges:** TOOLS-001 — Tool Protocol, Registry & Permissions
 
 ---
 
@@ -486,6 +497,26 @@ The state machine supports STOPPED, IDLE, LISTENING, UNDERSTANDING, PLANNING, AC
 VERIFYING, SPEAKING, WAITING_CONFIRMATION, BLOCKED, ERROR, and SLEEPING. Every transition is
 validated before mutation and emits previous/current state metadata. Optional speech services
 degrade independently so text interaction remains usable.
+
+---
+
+### Face Theme API
+
+```python
+class FaceTheme(Enum):
+    CLASSIC = "classic"
+    NEON_BLUE = "neon_blue"
+    PIXEL = "pixel"
+    RED_ALERT = "red_alert"
+    COSMIC = "cosmic"
+
+face = NexusFace(theme=FaceTheme.COSMIC)
+face.set_theme("pixel")
+svg = face.render("happy")
+```
+
+The face server accepts `theme` on render and animate requests and exposes available values through
+`GET /api/face/themes`. The animated browser demo includes a theme selector.
 
 ---
 
