@@ -744,7 +744,7 @@ so that Nexus can use approved services without exposing credentials.
 
 ### Task: CONNECTOR-002 — Gmail Tools
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 ---
 
@@ -761,12 +761,12 @@ so that routine correspondence is faster while I control every external action.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Search, read, thread-summary, and attachment-metadata tools are read-only
-- [ ] **AC-2:** Draft creation and editing are distinct from message sending
-- [ ] **AC-3:** Send, reply, label, archive, and delete actions use appropriate risk and confirmation levels
-- [ ] **AC-4:** Recipients, subject, body, attachment limits, and message identifiers are validated
-- [ ] **AC-5:** Message bodies and addresses are not copied into audit logs or long-term memory by default
-- [ ] **AC-6:** Mocked Gmail API tests cover pagination, drafts, confirmation, failures, and duplicate sends
+- [x] **AC-1:** Search, read, thread-summary, and attachment-metadata tools are read-only
+- [x] **AC-2:** Draft creation and editing are distinct from message sending
+- [x] **AC-3:** Send, reply, label, archive, and delete actions use appropriate risk and confirmation levels
+- [x] **AC-4:** Recipients, subject, body, attachment limits, and message identifiers are validated
+- [x] **AC-5:** Message bodies and addresses are not copied into audit logs or long-term memory by default
+- [x] **AC-6:** Mocked Gmail API tests cover pagination, drafts, confirmation, failures, and duplicate sends
 
 ## Definition of Done
 
@@ -777,6 +777,9 @@ so that routine correspondence is faster while I control every external action.
 ---
 
 **EST:** 8 SP
+
+**RT:** 2026-07-13
+**QA:** 2026-07-13
 
 ---
 
@@ -1298,6 +1301,7 @@ so that the assistant can match my preferred mood and desktop style.
 | UI-FACE-002 | Selectable Face Themes | 2026-07-13 | UI Agent |
 | TOOLS-001 | Tool Protocol, Registry & Permissions | 2026-07-13 | Integration Agent |
 | TASKS-001 | Goals, Plans & Resumable Tasks | 2026-07-13 | Integration Agent |
+| CONNECTOR-002 | Gmail Tools | 2026-07-13 | Integration Agent |
 
 ---
 

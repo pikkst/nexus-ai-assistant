@@ -11,7 +11,7 @@ from typing import Any
 
 from .models import RiskLevel, ToolRequest, utc_now
 
-_SENSITIVE_PARTS = ("password", "token", "secret", "api_key", "authorization", "cookie")
+_SENSITIVE_PARTS = ("password", "token", "secret", "api_key", "authorization", "cookie", "body", "address", "email", "recipient", "snippet", "to", "cc", "from_address", "from", "bcc", "subject")
 
 
 def redact(value: Any, key: str = "") -> Any:
