@@ -738,7 +738,7 @@ pip install -r requirements.txt
 
 ```bash
 # Face server (standalone):
-python -m nexus.ui.face_server
+python src/ui/face_server.py
 # Open http://localhost:8765/face-demo
 
 # Development (with hot reload for Gradio):
