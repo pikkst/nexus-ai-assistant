@@ -744,7 +744,7 @@ so that Nexus can use approved services without exposing credentials.
 
 ### Task: CONNECTOR-002 — Gmail Tools
 
-**Status:** 📋 BACKLOG
+**Status:** ⏳ IN PROGRESS
 
 ---
 

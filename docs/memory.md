@@ -141,7 +141,13 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** CONNECTOR-001 — Credential Vault & OAuth Foundation
+**Current Task:** CONNECTOR-002 — Gmail Tools
+
+**CONNECTOR-002 status:** ⏳ IN PROGRESS — branch `feature/gmail-tools` created from `develop`.
+Implementing read-only search/read tools, draft creation distinct from sending, risk-appropriate
+confirmation for send/reply/label/archive/delete, address/body/attachment validation, and redaction
+of message bodies and addresses from audit logs and memory. Mocked Gmail API tests must cover
+pagination, drafts, confirmation, failures, and duplicate sends.
 
 **CONNECTOR-001 validation:** 223 tests pass, including mocked connect, refresh, revoke,
 reconnect, missing-keyring, recursive-redaction, and concurrent-access coverage.
