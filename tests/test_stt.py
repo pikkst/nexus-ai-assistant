@@ -391,6 +391,24 @@ class TestSTTEngineTranscribe:
         with pytest.raises(TypeError, match="float32"):
             engine._validate_audio(audio)
 
+    def test_transcribe_empty_audio(self) -> None:
+        engine = STTEngine()
+        audio = np.array([], dtype=np.float32)
+        with pytest.raises(ValueError, match="empty"):
+            engine._validate_audio(audio)
+
+    def test_transcribe_nan_audio(self) -> None:
+        engine = STTEngine()
+        audio = np.array([0.1, np.nan, 0.2], dtype=np.float32)
+        with pytest.raises(ValueError, match="NaN or Inf"):
+            engine._validate_audio(audio)
+
+    def test_transcribe_inf_audio(self) -> None:
+        engine = STTEngine()
+        audio = np.array([0.1, np.inf, 0.2], dtype=np.float32)
+        with pytest.raises(ValueError, match="NaN or Inf"):
+            engine._validate_audio(audio)
+
     @pytest.mark.asyncio
     async def test_transcribe_language_fallback(self, sample_audio_16khz: np.ndarray) -> None:
         engine = STTEngine()
@@ -451,6 +469,10 @@ class TestResolveComputeType:
         engine = STTEngine(STTConfig(compute_type="float32"))
         assert engine._resolve_compute_type("cpu") == "float32"
 
+    def test_cpu_honors_int16(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="int16"))
+        assert engine._resolve_compute_type("cpu") == "int16"
+
     def test_cpu_falls_back_from_float16(self) -> None:
         engine = STTEngine(STTConfig(compute_type="float16"))
         assert engine._resolve_compute_type("cpu") == "int8"
@@ -466,6 +488,14 @@ class TestResolveComputeType:
     def test_cuda_honors_float32(self) -> None:
         engine = STTEngine(STTConfig(compute_type="float32"))
         assert engine._resolve_compute_type("cuda") == "float32"
+
+    def test_cuda_honors_int8_float16(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="int8_float16"))
+        assert engine._resolve_compute_type("cuda") == "int8_float16"
+
+    def test_cuda_honors_int16(self) -> None:
+        engine = STTEngine(STTConfig(compute_type="int16"))
+        assert engine._resolve_compute_type("cuda") == "int16"
 
     def test_cuda_falls_back_from_invalid(self) -> None:
         engine = STTEngine(STTConfig(compute_type="invalid"))

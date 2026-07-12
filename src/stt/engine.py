@@ -486,7 +486,7 @@ class STTEngine:
     # ------------------------------------------------------------------
 
     def _validate_audio(self, audio: np.ndarray) -> None:
-        """Validate audio array shape and dtype before transcription."""
+        """Validate audio array shape, dtype, and contents before transcription."""
         if not isinstance(audio, np.ndarray):
             raise TypeError(f"audio must be a numpy array, got {type(audio).__name__}")
         if audio.ndim != 1:
@@ -498,6 +498,13 @@ class STTEngine:
             raise TypeError(
                 f"audio dtype must be float32, got {audio.dtype}. "
                 "Use STTEngine.preprocess() to convert."
+            )
+        if audio.size == 0:
+            raise ValueError("audio array is empty. Provide non-empty audio for transcription.")
+        if not np.all(np.isfinite(audio)):
+            raise ValueError(
+                "audio array contains NaN or Inf values. "
+                "Check the audio source or use STTEngine.preprocess() to clean it."
             )
 
     def _resolve_device(self) -> str:
@@ -518,8 +525,8 @@ class STTEngine:
         Validates the configured compute_type against what the target
         device supports. Falls back to a safe default on mismatch.
         """
-        allowed_cpu = {"int8", "float32"}
-        allowed_cuda = {"float16", "int8", "float32"}
+        allowed_cpu = {"int8", "float32", "int16"}
+        allowed_cuda = {"float16", "int8", "float32", "int8_float16", "int16"}
 
         if device == "cuda":
             if self.config.compute_type in allowed_cuda:
