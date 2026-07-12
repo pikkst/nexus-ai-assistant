@@ -91,6 +91,9 @@
 | D-059 | 2026-07-13 | Web search and page retrieval depend on provider protocols | Providers remain configurable and tests never require live network access | Integration |
 | D-060 | 2026-07-13 | Page retrieval requires an explicit robots policy and streams into a hard byte limit | Callers cannot silently skip robots decisions or download unbounded responses | Security |
 | D-061 | 2026-07-13 | Research claims may cite only URLs present in the supplied source set | Nexus rejects fabricated claim-to-source attribution before rendering references | Data |
+| D-062 | 2026-07-13 | Connector tokens are persisted only through an OS-keyring adapter | Credentials never enter ordinary JSON configuration or project files | Security |
+| D-063 | 2026-07-13 | OAuth lifecycles serialize operations per account | Concurrent requests cannot race refresh, revoke, or credential replacement | Security |
+| D-064 | 2026-07-13 | Provider failures are converted to secret-free public OAuth errors | Provider exception text cannot leak access or refresh tokens | Security |
 | D-057 | 2026-07-13 | Agent loops pause on confirmation and enforce call, repetition, timeout, and parallel-call guards | Human control and bounded execution take priority over autonomous continuation | Integration |
 
 ---
@@ -138,7 +141,10 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** WEB-001 — Web Research & Source Management
+**Current Task:** CONNECTOR-001 — Credential Vault & OAuth Foundation
+
+**CONNECTOR-001 validation:** 223 tests pass, including mocked connect, refresh, revoke,
+reconnect, missing-keyring, recursive-redaction, and concurrent-access coverage.
 
 **WEB-001 validation:** 211 tests pass. Search and page providers are mocked in the web test suite;
 no live network access is required.
