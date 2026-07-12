@@ -34,6 +34,11 @@ class NexusConfig:
     llm_temperature: float = 0.7
     llm_max_tokens: int = 2048
     ollama_url: str = "http://localhost:11434"
+    llm_timeout: float = 60.0
+    llm_system_prompt: str = (
+        "You are Nexus, a helpful privacy-first local AI assistant. "
+        "Answer clearly and concisely."
+    )
 
     # Vision
     camera_index: int = 0
