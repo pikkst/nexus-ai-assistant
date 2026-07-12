@@ -785,7 +785,7 @@ so that routine correspondence is faster while I control every external action.
 
 ### Task: CONNECTOR-003 — Google Calendar Tools
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 ---
 
@@ -802,12 +802,12 @@ so that scheduling becomes faster without accidental invitations or deletions.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Calendar, event, attendee, recurrence, timezone, and free/busy models are typed
-- [ ] **AC-2:** Listing events and finding free time are read-only operations
-- [ ] **AC-3:** Event drafts show timezone, attendees, reminders, and conflicts before creation
-- [ ] **AC-4:** Create, update, invite, and delete operations require risk-appropriate confirmation
-- [ ] **AC-5:** Idempotency prevents duplicate events after retry or resumed tasks
-- [ ] **AC-6:** Mocked API tests cover pagination, DST, conflicts, recurrence, cancellation, and errors
+- [x] **AC-1:** Calendar, event, attendee, recurrence, timezone, and free/busy models are typed
+- [x] **AC-2:** Listing events and finding free time are read-only operations
+- [x] **AC-3:** Event drafts show timezone, attendees, reminders, and conflicts before creation
+- [x] **AC-4:** Create, update, invite, and delete operations require risk-appropriate confirmation
+- [x] **AC-5:** Idempotency prevents duplicate events after retry or resumed tasks
+- [x] **AC-6:** Mocked API tests cover pagination, DST, conflicts, recurrence, cancellation, and errors
 
 ## Definition of Done
 
@@ -818,6 +818,9 @@ so that scheduling becomes faster without accidental invitations or deletions.
 ---
 
 **EST:** 8 SP
+
+**RT:** 2026-07-13
+**QA:** 2026-07-13
 
 ---
 
@@ -1302,6 +1305,7 @@ so that the assistant can match my preferred mood and desktop style.
 | TOOLS-001 | Tool Protocol, Registry & Permissions | 2026-07-13 | Integration Agent |
 | TASKS-001 | Goals, Plans & Resumable Tasks | 2026-07-13 | Integration Agent |
 | CONNECTOR-002 | Gmail Tools | 2026-07-13 | Integration Agent |
+| CONNECTOR-003 | Google Calendar Tools | 2026-07-13 | Integration Agent |
 
 ---
 

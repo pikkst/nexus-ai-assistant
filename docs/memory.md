@@ -34,6 +34,7 @@
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
 | Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
 | Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
+| Google Calendar Tools | ✅ Complete (CONNECTOR-003) |
 
 **Legend:** ✅ Done | ⏳ In Progress | 📋 Planned | ❌ Not Started | 🚫 Blocked
 
@@ -94,6 +95,9 @@
 | D-062 | 2026-07-13 | Connector tokens are persisted only through an OS-keyring adapter | Credentials never enter ordinary JSON configuration or project files | Security |
 | D-063 | 2026-07-13 | OAuth lifecycles serialize operations per account | Concurrent requests cannot race refresh, revoke, or credential replacement | Security |
 | D-064 | 2026-07-13 | Provider failures are converted to secret-free public OAuth errors | Provider exception text cannot leak access or refresh tokens | Security |
+| D-065 | 2026-07-13 | Google Calendar tools reuse the existing tool risk and permission contracts | Read-only listing and free/busy remain safe, while create/update/delete require risk-appropriate confirmation | Integration |
+| D-066 | 2026-07-13 | Event creation supports optional idempotency keys | Retried or resumed tasks cannot produce duplicate calendar events | Data |
+| D-067 | 2026-07-13 | Audit redaction extended to calendar fields | Event summaries, locations, descriptions, and attendee lists do not leak into local audit logs | Security |
 | D-057 | 2026-07-13 | Agent loops pause on confirmation and enforce call, repetition, timeout, and parallel-call guards | Human control and bounded execution take priority over autonomous continuation | Integration |
 
 ---
@@ -141,10 +145,9 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** CONNECTOR-002 — Gmail Tools
+**Current Task:** CONNECTOR-003 — Google Calendar Tools
 
-**CONNECTOR-002 validation:** 10 Gmail-specific tests pass, covering pagination, drafts, confirmation,
-failures, duplicate sends, validation, and audit redaction. Full suite: 233 tests pass.
+**CONNECTOR-003 validation:** 14 Calendar-specific tests pass, covering pagination, DST, conflicts, recurrence, cancellation, errors, idempotency, and audit redaction. Full suite: 247 tests pass.
 
 **CONNECTOR-001 validation:** 223 tests pass, including mocked connect, refresh, revoke,
 reconnect, missing-keyring, recursive-redaction, and concurrent-access coverage.
@@ -154,7 +157,7 @@ no live network access is required.
 
 **TOOLS-003 validation:** 197 tests pass. Ruff is configured but is not installed in the active environment.
 
-**Most recently completed:** CONNECTOR-002 — Gmail Tools, ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
+**Most recently completed:** CONNECTOR-003 — Google Calendar Tools, CONNECTOR-002 — Gmail Tools, ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
 **What was built:**
 - `src/llm/tool_types.py` and `LLMClient.chat` — native Ollama tool schemas, calls, and role=tool conversations
@@ -213,6 +216,13 @@ no live network access is required.
 - `tests/test_audio.py` — 28 audio tests (VAD + capture + playback)
 - `tests/test_vision.py` — 11 camera tests
 - `tests/test_settings.py` — 7 config tests
+- `src/tools/calendar_models.py` — typed Calendar, Event, EventDraft, Attendee, RecurrenceRule, Reminder, Timezone, FreeBusySlot, and CalendarProvider protocol
+- `src/tools/calendar_provider.py` — MockCalendarProvider with idempotency, conflict detection, pagination, free/busy, and cancellation support
+- `src/tools/calendar_tools.py` — permissioned ListCalendarsTool, ListEventsTool, GetEventTool, FindFreeTimeTool, FindConflictsTool, CreateEventDraftTool, CreateEventTool, UpdateEventTool, and DeleteEventTool
+- `src/tools/calendar_factory.py` — create_calendar_registry helper
+- `tests/test_calendar_tools.py` — 14 tests covering pagination, DST, conflicts, recurrence, cancellation, errors, idempotency, audit redaction, and model validation
+- `src/tools/audit.py` — extended sensitive-key redaction to cover calendar fields (summary, location, description, attendee)
+- `src/tools/__init__.py` — exported calendar models, tools, and factory
 
 **Key decisions:**
 - Store lightweight conversation memory as human-readable JSON without requiring an embedding model
@@ -289,6 +299,8 @@ no live network access is required.
 stay within the project's 150-line limit, and `git diff --check` passes.
 
 **Next Task after merge:** TOOLS-003 — Local Development Toolset
+
+**CONNECTOR-003 validation:** 14 Calendar-specific tests pass, covering pagination, DST, conflicts, recurrence, cancellation, errors, idempotency, and audit redaction. Full suite: 247 tests pass.
 
 ---
 
@@ -656,6 +668,60 @@ The face server accepts `theme` on render and animate requests and exposes avail
 
 ---
 
+### Google Calendar Tool API
+
+```python
+# src/tools/calendar_models.py
+class Event:
+    id: str
+    summary: str
+    description: str
+    location: str
+    start: datetime
+    end: datetime
+    timezone: Timezone
+    attendees: tuple[Attendee, ...]
+    recurrence: tuple[RecurrenceRule, ...]
+    reminders: tuple[Reminder, ...]
+    status: str
+    calendar_id: str
+
+class EventDraft:
+    id: str
+    summary: str
+    start: datetime
+    end: datetime
+    timezone: Timezone
+    attendees: tuple[Attendee, ...]
+    recurrence: tuple[RecurrenceRule, ...]
+    reminders: tuple[Reminder, ...]
+    conflicts: tuple[Event, ...]
+    idempotency_key: str
+
+class FreeBusySlot:
+    start: datetime
+    end: datetime
+
+class CalendarProvider(Protocol):
+    async def list_calendars(self) -> tuple[list[Calendar], str | None]: ...
+    async def list_events(self, calendar_id: str, *, time_min: datetime, time_max: datetime, page_token: str | None = None) -> tuple[list[Event], str | None]: ...
+    async def get_event(self, calendar_id: str, event_id: str) -> Event: ...
+    async def create_event_draft(self, draft: EventDraft) -> EventDraft: ...
+    async def create_event(self, draft: EventDraft, *, confirmed: bool = False) -> Event: ...
+    async def update_event(self, calendar_id: str, event_id: str, *, summary: str | None = None, ...) -> Event: ...
+    async def delete_event(self, calendar_id: str, event_id: str) -> None: ...
+    async def free_busy(self, request: FreeBusyRequest) -> tuple[list[FreeBusySlot], str | None]: ...
+    async def find_conflicts(self, calendar_id: str, event: Event) -> tuple[list[Event], str | None]: ...
+```
+
+Tools are exposed through `create_calendar_registry(provider)`. Read-only tools (`list_calendars`,
+`list_events`, `get_event`, `find_free_time`, `find_conflicts`) do not require confirmation. Draft
+creation (`create_event_draft`) is `LOCAL_WRITE`. Event creation, update, and invite are `EXTERNAL`.
+Cancellation (`delete_event`) is `DESTRUCTIVE`. Optional `idempotency_key` on draft creation prevents
+duplicate events after retry or resumed tasks.
+
+---
+
 ## 7. Completed Tasks
 
 | Task ID | Name | Completed | By |
@@ -677,6 +743,7 @@ The face server accepts `theme` on render and animate requests and exposes avail
 | TOOLS-001 | Tool Protocol, Registry & Permissions | 2026-07-13 | Integration Agent |
 | TASKS-001 | Goals, Plans & Resumable Tasks | 2026-07-13 | Integration Agent |
 | CONNECTOR-002 | Gmail Tools | 2026-07-13 | Integration Agent |
+| CONNECTOR-003 | Google Calendar Tools | 2026-07-13 | Integration Agent |
 
 ---
 

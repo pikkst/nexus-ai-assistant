@@ -15,7 +15,8 @@ from .models import RiskLevel, ToolRequest, utc_now
 _SENSITIVE_PARTS = frozenset({
     "password", "token", "secret", "api_key", "authorization", "cookie",
     "body", "address", "email", "recipient", "snippet", "to", "cc",
-    "from_address", "from", "bcc", "subject",
+    "from_address", "from", "bcc", "subject", "summary", "location",
+    "description", "attendee",
 })
 
 
