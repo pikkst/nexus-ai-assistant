@@ -26,6 +26,15 @@ class FakeTool:
     description: str = "Echo one value."
     risk: RiskLevel = RiskLevel.READ_ONLY
     delay: float = 0.0
+    parameters: dict[str, Any] = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        if self.parameters is None:
+            self.parameters = {
+                "type": "object",
+                "properties": {"value": {}},
+                "required": ["value"],
+            }
 
     def validate(self, arguments: dict[str, Any]) -> None:
         if "value" not in arguments:
@@ -52,6 +61,8 @@ async def test_discovery_and_successful_invocation(tmp_path: Path) -> None:
 
     assert descriptor.name == "fake.echo"
     assert descriptor.risk is RiskLevel.READ_ONLY
+    descriptor.parameters["required"] = []
+    assert tools.discover()[0].parameters["required"] == ["value"]
     assert result.success
     assert result.output == "hello"
     assert tools.audit_log.entries()[0].status == "succeeded"

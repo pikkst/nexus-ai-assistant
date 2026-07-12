@@ -27,6 +27,11 @@ class _RootedTool:
 class ListDirectoryTool(_RootedTool):
     name = "filesystem.list_directory"
     description = "List files and directories within the configured project root."
+    parameters = {
+        "type": "object",
+        "properties": {"path": {"type": "string", "description": "Relative directory path"}},
+        "additionalProperties": False,
+    }
 
     def validate(self, arguments: dict[str, Any]) -> None:
         path = self._resolve(arguments.get("path", "."))
@@ -52,6 +57,12 @@ class ListDirectoryTool(_RootedTool):
 class ReadTextFileTool(_RootedTool):
     name = "filesystem.read_text"
     description = "Read a UTF-8 text file within the configured project root."
+    parameters = {
+        "type": "object",
+        "properties": {"path": {"type": "string", "description": "Relative file path"}},
+        "required": ["path"],
+        "additionalProperties": False,
+    }
 
     def __init__(self, root: Path | str, *, max_bytes: int = 262_144) -> None:
         super().__init__(root)
@@ -79,6 +90,7 @@ class ReadTextFileTool(_RootedTool):
 class InspectProjectTool(_RootedTool):
     name = "project.inspect"
     description = "Summarize the configured local Python project without modifying it."
+    parameters = {"type": "object", "properties": {}, "additionalProperties": False}
 
     def validate(self, arguments: dict[str, Any]) -> None:
         if arguments:

@@ -71,6 +71,7 @@ class ToolDescriptor:
     name: str
     description: str
     risk: RiskLevel
+    parameters: dict[str, Any]
 
 
 class Tool(Protocol):
@@ -79,6 +80,7 @@ class Tool(Protocol):
     name: str
     description: str
     risk: RiskLevel
+    parameters: dict[str, Any]
 
     def validate(self, arguments: dict[str, Any]) -> None: ...
     async def execute(self, arguments: dict[str, Any]) -> Any: ...
