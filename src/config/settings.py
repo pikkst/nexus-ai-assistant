@@ -60,6 +60,9 @@ class NexusConfig:
     # Evaluation
     eval_path: str = str(Path("~/.nexus/eval").expanduser())
 
+    # Learning
+    learning_path: str = str(Path("~/.nexus/learning").expanduser())
+
     # Runtime features
     enable_audio_input: bool = True
     enable_audio_output: bool = True
