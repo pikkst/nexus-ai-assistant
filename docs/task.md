@@ -905,7 +905,9 @@ so that I can work efficiently without unsafe automation or account-policy viola
 
 ### Task: PLUGIN-001 — MCP & Plugin Tool Discovery
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
+
+**EST:** 13 SP | **RT:** 2026-07-13 | **QA:** 2026-07-13
 
 ---
 
@@ -922,12 +924,12 @@ so that service integrations can evolve as isolated, reviewable packages.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Plugin manifests define identity, version, tool schemas, permissions, and entry point
-- [ ] **AC-2:** MCP tool schemas are validated and adapted into ToolDescriptor and ToolRequest contracts
-- [ ] **AC-3:** Only explicitly installed and enabled providers are loaded
-- [ ] **AC-4:** Provider tools cannot bypass registry risk policy, timeout, cancellation, or audit
-- [ ] **AC-5:** Version conflicts, unavailable servers, duplicate names, and malformed schemas fail safely
-- [ ] **AC-6:** Tests cover discovery, enable/disable, isolation, collisions, failures, and uninstall behavior
+- [x] **AC-1:** Plugin manifests define identity, version, tool schemas, permissions, and entry point
+- [x] **AC-2:** MCP tool schemas are validated and adapted into ToolDescriptor and ToolRequest contracts
+- [x] **AC-3:** Only explicitly installed and enabled providers are loaded
+- [x] **AC-4:** Provider tools cannot bypass registry risk policy, timeout, cancellation, or audit
+- [x] **AC-5:** Version conflicts, unavailable servers, duplicate names, and malformed schemas fail safely
+- [x] **AC-6:** Tests cover discovery, enable/disable, isolation, collisions, failures, and uninstall behavior
 
 ## Definition of Done
 
@@ -1311,6 +1313,7 @@ so that the assistant can match my preferred mood and desktop style.
 | CONNECTOR-003 | Google Calendar Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-004 | Telegram Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-005 | LinkedIn Assisted Workflow | 2026-07-13 | Integration Agent |
+| PLUGIN-001 | MCP & Plugin Tool Discovery | 2026-07-13 | Integration Agent |
 
 ---
 
