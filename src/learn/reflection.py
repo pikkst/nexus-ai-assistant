@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 from src.eval.models import EvaluationRecord, FeedbackKind
 from src.tasks.models import Goal, PlanStep

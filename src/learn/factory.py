@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.memory import MemoryManager, MemoryStore
+from src.memory import MemoryManager
 from .quarantine import QuarantineManager
 from .reflection import ReflectionEngine
 from .store import LessonStore

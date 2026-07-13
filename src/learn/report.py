@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
 from src.eval.models import EvalMetrics
 
 from .models import (
