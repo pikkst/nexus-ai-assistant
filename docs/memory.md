@@ -29,6 +29,7 @@
 | Runtime State Machine | ✅ Complete (CORE-001) |
 | Tool Execution & Permissions | ✅ Complete (TOOLS-001) |
 | Goals & Resumable Tasks | ✅ Complete (TASKS-001) |
+| Plugin & MCP Tool Discovery | ✅ Complete (PLUGIN-001) |
 | LLM Tool Selection & Calling | 🔀 Draft PR #18 (TOOLS-002) |
 | Local Development Toolset | ⏳ In Progress (TOOLS-003) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
@@ -103,6 +104,11 @@
 | D-068 | 2026-07-13 | LinkedIn routes local analysis and drafts through permissioned LOCAL_WRITE tools | Profile, post, and company imports work without credentials while keeping credential-free isolation | Integration |
 | D-069 | 2026-07-13 | LinkedIn publish and send actions require explicit scope detection via detect_official_api_capabilities | Automated outreach is denied unless the official API scope is explicitly granted | Security |
 | D-070 | 2026-07-13 | LinkedIn tools never expose scraping, mass outreach, or hidden browser automation | Terms-aware behaviors are gated behind official API contracts only | Security |
+| D-071 | 2026-07-13 | Plugin manifests declare identity, version, tool schemas, permissions, and entry point | Third-party capabilities can be reviewed and installed without modifying core code | Integration |
+| D-072 | 2026-07-13 | MCP tool schemas are adapted into existing ToolDescriptor and ToolRequest contracts | External MCP servers expose tools through the same registry, risk, permission, and audit flow | Integration |
+| D-073 | 2026-07-13 | Only explicitly installed and enabled providers are loaded | Disabling or removing a provider immediately removes its tools without affecting core tools | Integration |
+| D-074 | 2026-07-13 | Plugin tools cannot bypass registry risk policy, timeout, cancellation, or audit | All plugin tool invocations pass through the same ToolRegistry and audit log | Security |
+| D-075 | 2026-07-13 | Version conflicts, unavailable servers, duplicate names, and malformed schemas fail safely | Broken or conflicting plugins are skipped or rejected without corrupting the registry | Integration |
 | D-057 | 2026-07-13 | Agent loops pause on confirmation and enforce call, repetition, timeout, and parallel-call guards | Human control and bounded execution take priority over autonomous continuation | Integration |
 
 ---
@@ -150,7 +156,9 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** CONNECTOR-005 — LinkedIn Assisted Workflow
+**Current Task:** PLUGIN-001 — MCP & Plugin Tool Discovery
+
+**PLUGIN-001 validation:** 24 plugin discovery tests pass, covering manifest discovery, local plugin loading, MCP tool adaptation, enable/disable, isolation, collisions, failures, uninstall, and adapter validation. Full suite: 295 tests pass (1 pre-existing calendar audit test failure unrelated to this work).
 
 **CONNECTOR-005 validation:** 16 LinkedIn-specific tests pass, covering capabilities detection, draft workflows, scope denial, unsupported actions, and audit redaction. Full suite: 272 tests pass (1 pre-existing calendar audit test failure unrelated to this work).
 
@@ -175,14 +183,19 @@ no live network access is required.
 - `src/tools/telegram_provider.py` — MockTelegramProvider with bot identity, authorized chats, polling, and send support
 - `src/tools/telegram_tools.py` — permissioned GetBotInfoTool, ListAuthorizedChatsTool, GetChatTool, GetUpdatesTool, DraftMessageTool, SendMessageTool, and SendAttachmentTool
 - `src/tools/telegram_factory.py` — create_telegram_registry helper
-- `tests/test_telegram_tools.py` — 9 mocked Bot API tests covering authorization, polling, sending, failures, and audit redaction
-- `src/tools/audit.py` — extended sensitive-key redaction to cover Telegram text and caption fields
 - `src/tools/linkedin_models.py` — typed LinkedInProfile, LinkedInPost, LinkedInMessage, LinkedInCompany, LinkedInDraft, LinkedInScope, and LinkedInProvider protocol
 - `src/tools/linkedin_provider.py` — MockLinkedInProvider with scope configuration, profile/post/company storage, and draft + publish + message send support
 - `src/tools/linkedin_tools.py` — permissioned DetectOfficialApiCapabilitiesTool, AnalyzeProfileTool, AnalyzePostTool, ImportProfileTool, ImportPostTool, ImportCompanyTool, CreatePostDraftTool, CreateMessageDraftTool, ImproveProfileTool, PublishPostTool, and SendMessageTool
 - `src/tools/linkedin_factory.py` — create_linkedin_registry helper
 - `tests/test_linkedin_tools.py` — 16 mocked tests covering capabilities detection, draft workflows, scope denial, unsupported actions, and audit redaction
 - `src/tools/__init__.py` — exported LinkedIn models, tools, and factory
+- `src/tools/plugin_models.py` — typed PluginManifest, PluginToolSchema, and McpServerConfig contracts
+- `src/tools/mcp_client.py` — JSON-RPC client for MCP initialize, tools/list, and tools/call over HTTP
+- `src/tools/plugin_adapter.py` — PluginTool and McpTool wrappers that adapt plugin/MCP tools into the Nexus Tool protocol
+- `src/tools/plugin_discovery.py` — PluginManager for manifest discovery, local plugin loading, MCP tool adaptation, enable/disable, and uninstall
+- `src/tools/plugin_factory.py` — create_plugin_registry and create_and_load_plugin_registry helpers
+- `src/config/settings.py` — persisted plugins_dir and enable_plugins configuration
+- `tests/test_plugin_discovery.py` — 24 tests covering discovery, loading, collisions, enable/disable, isolation, failures, uninstall, and adapter validation
 - `src/llm/tool_types.py` and `LLMClient.chat` — native Ollama tool schemas, calls, and role=tool conversations
 - `src/tools/calling.py` — typed completed, waiting-confirmation, and failed agent-run snapshots
 - `src/tools/agent.py` — bounded selection, registry invocation, result injection, pause/resume, and recovery loop

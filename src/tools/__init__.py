@@ -99,6 +99,18 @@ from .linkedin_tools import (
 )
 from .linkedin_factory import create_linkedin_registry
 from .telegram_factory import create_telegram_registry
+from .plugin_models import McpServerConfig, PluginManifest, PluginToolSchema
+from .plugin_adapter import McpTool, PluginTool
+from .plugin_discovery import (
+    LoadedPlugin,
+    PluginDuplicateNameError,
+    PluginLoadError,
+    PluginManager,
+    PluginSchemaError,
+    PluginVersionConflictError,
+)
+from .plugin_factory import create_and_load_plugin_registry, create_plugin_registry
+from .mcp_client import McpClient, McpError, McpTimeoutError, McpToolCallResult
 
 __all__ = [
     "AuditEntry", "InspectProjectTool", "ListDirectoryTool", "PendingToolCall",
@@ -131,4 +143,9 @@ __all__ = [
     "CreatePostDraftTool", "DetectOfficialApiCapabilitiesTool", "ImproveProfileTool",
     "ImportCompanyTool", "ImportPostTool", "ImportProfileTool",
     "PublishPostTool", "SendMessageTool", "create_linkedin_registry",
+    "McpServerConfig", "McpClient", "McpError", "McpTimeoutError", "McpToolCallResult",
+    "PluginManifest", "PluginToolSchema", "PluginTool", "McpTool",
+    "PluginManager", "LoadedPlugin", "PluginLoadError", "PluginVersionConflictError",
+    "PluginDuplicateNameError", "PluginSchemaError",
+    "create_plugin_registry", "create_and_load_plugin_registry",
 ]

@@ -64,6 +64,10 @@ class NexusConfig:
     face_theme: str = "classic"
     language: str = "et"
 
+    # Plugins
+    plugins_dir: str = str(Path("~/.nexus/plugins").expanduser())
+    enable_plugins: bool = True
+
     def save(self, path: Path | str | None = None) -> None:
         """Save config to JSON file."""
         if path is None:
