@@ -1,0 +1,28 @@
+name: Packaging Smoke Test
+
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [feature/packaging-distribution]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install build tooling
+        run: pip install build
+      - name: Build package
+        run: python -m build
+      - name: Create fresh virtualenv
+        run: python -m venv /tmp/nexus-smoke && /tmp/nexus-smoke/bin/pip install --upgrade pip
+      - name: Install wheel in clean venv
+        run: /tmp/nexus-smoke/bin/pip install dist/*.whl
+      - name: Verify CLI entry point
+        run: /tmp/nexus-smoke/bin/nexus --help
+      - name: Verify core imports
+        run: /tmp/nexus-smoke/bin/python -c "import src; import src.main; import src.app; import src.audio; import src.config; import src.llm; import src.memory; import src.stt; import src.tts; import src.ui; import src.vision; print('Installed package imports OK')"

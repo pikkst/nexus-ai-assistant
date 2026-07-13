@@ -427,9 +427,9 @@ so that I can speak to the assistant and receive a spoken response.
 
 ### Task: OPS-001 — Packaging & Distribution
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
-**EST:** 5 SP
+**EST:** 5 SP | **RT:** 2026-07-13 | **QA:** 2026-07-13
 
 ---
 
@@ -445,12 +445,12 @@ so that the assistant can be distributed and run easily.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Packaging configuration for Python install and execution
-- [ ] **AC-2:** CLI entry point for launching the assistant
-- [ ] **AC-3:** Clear installation and startup instructions in documentation
-- [ ] **AC-4:** Build artifacts that can be created from the repository
-- [ ] **AC-5:** Basic packaging smoke test in a clean environment
-- [ ] **AC-6:** Versioned release workflow for future updates
+- [x] **AC-1:** Packaging configuration for Python install and execution
+- [x] **AC-2:** CLI entry point for launching the assistant
+- [x] **AC-3:** Clear installation and startup instructions in documentation
+- [x] **AC-4:** Build artifacts that can be created from the repository
+- [x] **AC-5:** Basic packaging smoke test in a clean environment
+- [x] **AC-6:** Versioned release workflow for future updates
 
 ## Definition of Done
 
