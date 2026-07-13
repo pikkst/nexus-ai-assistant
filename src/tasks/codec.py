@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from .models import Blocker, Evidence, Goal, GoalStatus, PlanStep, StepResult, StepStatus
+from .models import Blocker, Evidence, Goal, GoalStatus, PlanStep, StepResult, StepStatus, SuccessCriterion
 
 
 def _date(value: str | None) -> datetime | None:
@@ -31,6 +31,15 @@ def _step_to_dict(step: PlanStep) -> dict[str, Any]:
         "description": step.description,
         "dependencies": list(step.dependencies),
         "verification_required": step.verification_required,
+        "success_criteria": [
+            {
+                "id": criterion.id,
+                "description": criterion.description,
+                "check_type": criterion.check_type,
+                "expression": criterion.expression,
+            }
+            for criterion in step.success_criteria
+        ],
         "status": step.status.value,
         "result": None if step.result is None else _result_to_dict(step.result),
         "blocker": None if step.blocker is None else _blocker_to_dict(step.blocker),
@@ -48,6 +57,7 @@ def _result_to_dict(result: StepResult) -> dict[str, Any]:
                 "kind": item.kind,
                 "summary": item.summary,
                 "verified": item.verified,
+                "confidence": item.confidence,
                 "reference": item.reference,
                 "created_at": item.created_at.isoformat(),
             }
@@ -81,12 +91,22 @@ def goal_from_dict(data: dict[str, Any]) -> Goal:
 def _step_from_dict(data: dict[str, Any]) -> PlanStep:
     blocker_data = data.get("blocker")
     result_data = data.get("result")
+    success_criteria_data = data.get("success_criteria", [])
     return PlanStep(
         id=data["id"],
         title=data["title"],
         description=data.get("description", ""),
         dependencies=tuple(data.get("dependencies", [])),
         verification_required=bool(data.get("verification_required", True)),
+        success_criteria=tuple(
+            SuccessCriterion(
+                id=item["id"],
+                description=item.get("description", ""),
+                check_type=item.get("check_type", "machine"),
+                expression=item.get("expression"),
+            )
+            for item in success_criteria_data
+        ),
         status=StepStatus(data["status"]),
         result=None if result_data is None else _result_from_dict(result_data),
         blocker=None if blocker_data is None else Blocker(
@@ -103,12 +123,18 @@ def _step_from_dict(data: dict[str, Any]) -> PlanStep:
 def _result_from_dict(data: dict[str, Any]) -> StepResult:
     evidence = tuple(
         Evidence(
-            kind=item["kind"], summary=item["summary"], verified=bool(item["verified"]),
-            reference=item.get("reference"), created_at=datetime.fromisoformat(item["created_at"]),
+            kind=item["kind"],
+            summary=item["summary"],
+            verified=bool(item["verified"]),
+            confidence=float(item.get("confidence", 1.0)),
+            reference=item.get("reference"),
+            created_at=datetime.fromisoformat(item["created_at"]),
         )
         for item in data.get("evidence", [])
     )
     return StepResult(
-        success=bool(data["success"]), summary=data["summary"], evidence=evidence,
+        success=bool(data["success"]),
+        summary=data["summary"],
+        evidence=evidence,
         completed_at=datetime.fromisoformat(data["completed_at"]),
     )

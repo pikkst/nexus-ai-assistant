@@ -1107,7 +1107,7 @@ so that interaction feels personal without interfering with focused work.
 
 ### Task: EVAL-001 — Result Verification & Feedback
 
-**Status:** 📋 BACKLOG
+**Status:** ⏳ IN PROGRESS
 
 ---
 
@@ -1124,12 +1124,12 @@ so that the assistant is dependable rather than merely convincing.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Task steps can define machine-checkable or user-confirmed success criteria
-- [ ] **AC-2:** Verification results include evidence, confidence, and failure explanation
-- [ ] **AC-3:** Failed verification returns work to an actionable state
-- [ ] **AC-4:** User feedback supports positive, negative, and explanatory signals
-- [ ] **AC-5:** Local metrics track success, corrections, latency, and memory usefulness
-- [ ] **AC-6:** Tests prove that unsupported completion claims are rejected
+- [x] **AC-1:** Task steps can define machine-checkable or user-confirmed success criteria
+- [x] **AC-2:** Verification results include evidence, confidence, and failure explanation
+- [x] **AC-3:** Failed verification returns work to an actionable state
+- [x] **AC-4:** User feedback supports positive, negative, and explanatory signals
+- [x] **AC-5:** Local metrics track success, corrections, latency, and memory usefulness
+- [x] **AC-6:** Tests prove that unsupported completion claims are rejected
 
 ## Definition of Done
 
@@ -1140,6 +1140,9 @@ so that the assistant is dependable rather than merely convincing.
 ---
 
 **EST:** 5 SP
+
+**RT:** 2026-07-13
+**QA:** 2026-07-13
 
 ---
 

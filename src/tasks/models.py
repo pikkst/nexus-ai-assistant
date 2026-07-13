@@ -35,12 +35,23 @@ class StepStatus(Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class SuccessCriterion:
+    """One machine-checkable or user-confirmed success condition for a step."""
+
+    id: str
+    description: str
+    check_type: str = "machine"
+    expression: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class Evidence:
     """One verification artifact supporting a result."""
 
     kind: str
     summary: str
     verified: bool = False
+    confidence: float = 1.0
     reference: str | None = None
     created_at: datetime = field(default_factory=utc_now)
 
@@ -73,6 +84,7 @@ class PlanStep:
     description: str = ""
     dependencies: tuple[str, ...] = ()
     verification_required: bool = True
+    success_criteria: tuple[SuccessCriterion, ...] = ()
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
     status: StepStatus = StepStatus.PENDING
     result: StepResult | None = None

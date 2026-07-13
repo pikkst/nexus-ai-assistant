@@ -34,7 +34,7 @@
 | Local Development Toolset | ⏳ In Progress (TOOLS-003) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
 | Persona & Interaction Modes | ✅ Complete (PERSONA-001) |
-| Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
+| Verification & Safe Learning | ✅ Complete (EVAL-001) |
 | Google Calendar Tools | ✅ Complete (CONNECTOR-003) |
 | Telegram Tools | ✅ Complete (CONNECTOR-004) |
 | LinkedIn Tools | ✅ Complete (CONNECTOR-005) |
@@ -159,7 +159,9 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** PLUGIN-001 — MCP & Plugin Tool Discovery
+**Current Task:** EVAL-001 — Result Verification & Feedback
+
+**EVAL-001 validation:** Tests prove that unsupported completion claims are rejected, verification includes evidence/confidence/failure explanation, failed verification returns work to PENDING, user feedback supports positive/negative/explanatory signals, and local metrics track success, corrections, latency, and memory usefulness.
 
 **PLUGIN-001 validation:** 24 plugin discovery tests pass, covering manifest discovery, local plugin loading, MCP tool adaptation, enable/disable, isolation, collisions, failures, uninstall, and adapter validation. Full suite: 295 tests pass (1 pre-existing calendar audit test failure unrelated to this work).
 
@@ -179,7 +181,7 @@ no live network access is required.
 
 **Most recently completed:** CONNECTOR-005 — LinkedIn Assisted Workflow, CONNECTOR-004 — Telegram Tools, CONNECTOR-003 — Google Calendar Tools, CONNECTOR-002 — Gmail Tools, ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
-**Current work in progress:** PLUGIN-001 — MCP & Plugin Tool Discovery
+**Current work in progress:** EVAL-001 — Result Verification & Feedback
 
 **What was built:**
 - `src/tools/telegram_models.py` — typed TelegramUser, Chat, Message, Attachment, Update, MessageDraft, and TelegramProvider protocol
@@ -273,7 +275,7 @@ no live network access is required.
 - `src/ui/memory_consent.py` — `MemoryConsentWindow` with search, type/scope/source/sensitivity filters, delete, edit, pin, export, clear-by-type, self-summary, and consent policy selector
 - `src/ui/__init__.py` — exported `MemoryConsentWindow` and `open_memory_consent`
 - `src/app/contracts.py` — extended `MemoryService` protocol with delete, update, pin, export, clear, and audit-log operations
-- `tests/test_memory_consent.py` — 26 tests covering store mutations, audit, export/clear, consent policies, manager filters, self-summary, and UI module import
+ - `tests/test_memory_consent.py` — 26 tests covering store mutations, audit, export/clear, consent policies, manager filters, self-summary, and UI module import
 
 **PERSONA-001 implementation:**
 - `src/persona/models.py` — `PersonaMode` (companion, balanced, focused), `PersonaSettings` (mode, playfulness, proactivity, response_detail, unsolicited_suggestions, quiet_hours), and `PersonaResponseMetadata` (emotion, voice_energy, confidence, detail_level, should_suggest)
@@ -285,6 +287,20 @@ no live network access is required.
 - `src/app/factory.py` — constructs `PersonaManager` from `NexusConfig` persona fields and injects it into `NexusRuntime`
 - `src/ui/settings.py` — persona section in settings window (mode dropdown, playfulness/proactivity/detail sliders, unsolicited suggestions toggle, quiet-hours start/end entries)
 - `tests/test_persona.py` — 27 tests covering settings validation, mode behavior, metadata bounds, quiet hours, proactive rate-limiting, prompt integration, config roundtrip, and persistence
+
+**EVAL-001 implementation:**
+- `src/tasks/models.py` — added `SuccessCriterion` (id, description, check_type, expression) and `confidence` field to `Evidence`
+- `src/tasks/codec.py` — serializes and deserializes `success_criteria` and evidence `confidence`
+- `src/tasks/operations.py` — added `revert_step_for_rework` to return failed steps to PENDING
+- `src/tasks/manager.py` — exposes `add_step` success_criteria and `revert_step_for_rework`
+- `src/eval/models.py` — `VerificationResult`, `FeedbackSignal`, `FeedbackKind`, `EvaluationRecord`, `EvalMetrics`
+- `src/eval/verifier.py` — `StepVerifier` evaluates step success criteria against evidence, computes confidence and failure explanations
+- `src/eval/feedback.py` — `FeedbackCollector` supports positive, negative, and explanatory signals with summary stats
+- `src/eval/store.py` — append-only JSONL persistence for evaluation records
+- `src/eval/metrics.py` — `MetricsTracker` records success rate, corrections, latency, and memory usefulness
+- `src/eval/factory.py` — `create_eval_layer` helper
+- `src/config/settings.py` — persisted `eval_path`
+- `tests/test_eval.py` — verifier, feedback, metrics, persistence, integration with task manager, and rejection of unsupported completion claims
 
 **Key decisions:**
 - Store lightweight conversation memory as human-readable JSON without requiring an embedding model
@@ -811,6 +827,7 @@ duplicate events after retry or resumed tasks.
 | MEM-002 | Structured Multi-Layer Memory | 2026-07-13 | Backend Agent |
 | MEM-003 | Memory Consent & Management UI | 2026-07-13 | Backend Agent |
 | PERSONA-001 | Persona & Interaction Modes | 2026-07-13 | Integration Agent |
+| EVAL-001 | Result Verification & Feedback | 2026-07-13 | Integration Agent |
 
 ---
 

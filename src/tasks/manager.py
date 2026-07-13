@@ -7,7 +7,7 @@ from collections.abc import Callable, Sequence
 
 from . import operations
 from .base import TaskManagerBase
-from .models import Evidence, Goal, PlanStep, StepStatus, TaskStateError, utc_now
+from .models import Evidence, Goal, PlanStep, StepStatus, SuccessCriterion, TaskStateError, utc_now
 from .store import TaskStore
 
 class TaskManager(TaskManagerBase):
@@ -40,6 +40,7 @@ class TaskManager(TaskManagerBase):
         description: str = "",
         dependencies: Sequence[str] = (),
         verification_required: bool = True,
+        success_criteria: Sequence[SuccessCriterion] = (),
     ) -> PlanStep:
         goal = self._editable_goal(goal_id)
         if not title.strip():
@@ -52,6 +53,7 @@ class TaskManager(TaskManagerBase):
             title=title.strip(), description=description.strip(),
             dependencies=tuple(dict.fromkeys(dependencies)),
             verification_required=verification_required,
+            success_criteria=tuple(success_criteria),
         )
         goal.steps.append(step)
         self._touch(goal)
@@ -112,6 +114,12 @@ class TaskManager(TaskManagerBase):
 
     def fail_step(self, goal_id: str, step_id: str, summary: str) -> None:
         self._apply(goal_id, "step_failed", operations.fail_step, step_id, summary, step_id=step_id)
+
+    def revert_step_for_rework(self, goal_id: str, step_id: str) -> None:
+        self._apply(
+            goal_id, "step_reverted", operations.revert_step_for_rework,
+            step_id, step_id=step_id,
+        )
 
     def complete_goal(self, goal_id: str) -> None:
         self._apply(goal_id, "goal_completed", operations.complete_goal)

@@ -57,6 +57,9 @@ class NexusConfig:
     # Tasks
     tasks_path: str = str(Path("~/.nexus/tasks").expanduser())
 
+    # Evaluation
+    eval_path: str = str(Path("~/.nexus/eval").expanduser())
+
     # Runtime features
     enable_audio_input: bool = True
     enable_audio_output: bool = True
