@@ -1064,7 +1064,9 @@ so that personalization remains understandable and reversible.
 
 ### Task: PERSONA-001 — Persona & Interaction Modes
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
+
+**EST:** 5 SP | **RT:** 2026-07-13 | **QA:** 2026-07-13
 
 ---
 
@@ -1081,12 +1083,12 @@ so that interaction feels personal without interfering with focused work.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Companion, balanced, and focused interaction modes are available
-- [ ] **AC-2:** Settings include playfulness, proactivity, response detail, quiet hours, and unsolicited suggestions
-- [ ] **AC-3:** Persona changes expression and delivery but never lowers factual or permission standards
-- [ ] **AC-4:** Structured response metadata can drive emotion, voice delivery, and confidence cues
-- [ ] **AC-5:** Proactive behavior is rate-limited, interruptible, and disabled during quiet hours
-- [ ] **AC-6:** Tests verify stable behavior and settings persistence
+- [x] **AC-1:** Companion, balanced, and focused interaction modes are available
+- [x] **AC-2:** Settings include playfulness, proactivity, response detail, quiet hours, and unsolicited suggestions
+- [x] **AC-3:** Persona changes expression and delivery but never lowers factual or permission standards
+- [x] **AC-4:** Structured response metadata can drive emotion, voice delivery, and confidence cues
+- [x] **AC-5:** Proactive behavior is rate-limited, interruptible, and disabled during quiet hours
+- [x] **AC-6:** Tests verify stable behavior and settings persistence
 
 ## Definition of Done
 
@@ -1097,6 +1099,9 @@ so that interaction feels personal without interfering with focused work.
 ---
 
 **EST:** 5 SP
+
+**RT:** 2026-07-13
+**QA:** 2026-07-13
 
 ---
 
@@ -1320,6 +1325,7 @@ so that the assistant can match my preferred mood and desktop style.
 | CONNECTOR-005 | LinkedIn Assisted Workflow | 2026-07-13 | Integration Agent |
 | PLUGIN-001 | MCP & Plugin Tool Discovery | 2026-07-13 | Integration Agent |
 | MEM-003 | Memory Consent & Management UI | 2026-07-13 | Backend Agent |
+| PERSONA-001 | Persona & Interaction Modes | 2026-07-13 | Integration Agent |
 
 ---
 

@@ -5,6 +5,28 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 
+def apply_persona(base_prompt: str, *, mode: str = "balanced", playfulness: float = 0.5, response_detail: float = 0.5) -> str:
+    tone = (
+        "Use warm, brief responses with light emoji sparingly."
+        if playfulness > 0.7
+        else "Keep responses factual and concise."
+        if playfulness < 0.3
+        else "Balance warmth and clarity."
+    )
+    detail = (
+        "Provide short, focused answers."
+        if response_detail < 0.33
+        else "Offer thorough explanations with context."
+        if response_detail > 0.66
+        else "Provide clear, complete answers."
+    )
+    return (
+        f"{base_prompt}\n\n"
+        f"Persona mode: {mode}. {tone} {detail}\n"
+        "Always preserve factual accuracy, cite uncertainty, and respect user control."
+    )
+
+
 DEFAULT_SYSTEM_PROMPT = (
     "You are Nexus, a helpful privacy-first local AI assistant. "
     "Answer clearly and concisely."
