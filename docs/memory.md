@@ -262,6 +262,15 @@ no live network access is required.
 - `tests/test_calendar_tools.py` — 14 tests covering pagination, DST, conflicts, recurrence, cancellation, errors, idempotency, audit redaction, and model validation
 - `src/tools/audit.py` — extended sensitive-key redaction to cover calendar fields (summary, location, description, attendee)
 - `src/tools/__init__.py` — exported calendar models, tools, and factory
+- `src/memory/models.py` — extended with `ConsentAction`, `ConsentPolicy`, `MemoryAuditRecord`, `pinned` field, and default sensitive-keyword constants
+- `src/memory/store.py` — added `delete`, `update_text`, `toggle_pin`, audit log, export by type/scope/time-range, clear by type/scope/time-range, consent policy, and sensitive-keyword detection
+- `src/memory/manager.py` — added `consent_policy`, `_check_consent`, `search` with multi-field filters, `delete_memory`, `update_memory`, `toggle_pin`, export/clear delegation, and `generate_self_summary`
+- `src/memory/__init__.py` — exported new consent, audit, and manager-level control symbols
+- `src/config/settings.py` — added `memory_sensitive_policy`, `memory_consent_audit_log`, and `memory_pinned_ids`
+- `src/ui/memory_consent.py` — `MemoryConsentWindow` with search, type/scope/source/sensitivity filters, delete, edit, pin, export, clear-by-type, self-summary, and consent policy selector
+- `src/ui/__init__.py` — exported `MemoryConsentWindow` and `open_memory_consent`
+- `src/app/contracts.py` — extended `MemoryService` protocol with delete, update, pin, export, clear, and audit-log operations
+- `tests/test_memory_consent.py` — 26 tests covering store mutations, audit, export/clear, consent policies, manager filters, self-summary, and UI module import
 
 **Key decisions:**
 - Store lightweight conversation memory as human-readable JSON without requiring an embedding model
@@ -786,6 +795,7 @@ duplicate events after retry or resumed tasks.
 | CONNECTOR-004 | Telegram Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-005 | LinkedIn Assisted Workflow | 2026-07-13 | Integration Agent |
 | MEM-002 | Structured Multi-Layer Memory | 2026-07-13 | Backend Agent |
+| MEM-003 | Memory Consent & Management UI | 2026-07-13 | Backend Agent |
 
 ---
 
@@ -860,6 +870,84 @@ class MemoryRetriever:
 ```
 
 Storage is a versioned JSON document (v1 legacy auto-migrates to v2). Search uses token-frequency cosine similarity as baseline; an optional `embedding_fn` enables hybrid retrieval. Retention policies are type-specific.
+
+### Memory Consent & Management API
+
+```python
+# src/memory/models.py
+class ConsentAction(str, Enum):
+    ASK = "ask"
+    ALLOW = "allow"
+    NEVER_STORE = "never_store"
+
+@dataclass(frozen=True, slots=True)
+class ConsentPolicy:
+    action: ConsentAction = ConsentAction.ASK
+    sensitive_keywords: tuple[str, ...] = (...)
+    ask_prompt: str = "Nexus detected potentially sensitive information..."
+
+@dataclass(frozen=True, slots=True)
+class MemoryAuditRecord:
+    action: str
+    entry_id: str
+    timestamp: str
+    details: dict[str, Any] = field(default_factory=dict)
+```
+
+```python
+# src/memory/store.py
+class MemoryStore:
+    def delete(self, entry_id: str) -> MemoryEntry | None: ...
+    def update_text(self, entry_id: str, new_text: str) -> MemoryEntry | None: ...
+    def toggle_pin(self, entry_id: str) -> MemoryEntry | None: ...
+    def audit_log(self) -> tuple[MemoryAuditRecord, ...]: ...
+    def export_by_type(self, memory_type: MemoryType) -> str: ...
+    def export_by_scope(self, scope: MemoryScope) -> str: ...
+    def export_by_time_range(self, start: datetime, end: datetime) -> str: ...
+    def clear_by_type(self, memory_type: MemoryType) -> int: ...
+    def clear_by_scope(self, scope: MemoryScope) -> int: ...
+    def clear_by_time_range(self, start: datetime, end: datetime) -> int: ...
+    def check_consent(self, sensitivity: SensitivityLevel, policy: ConsentPolicy) -> bool: ...
+    def contains_sensitive(self, text: str, policy: ConsentPolicy) -> bool: ...
+```
+
+```python
+# src/memory/manager.py
+class MemoryManager:
+    def __init__(self, store: MemoryStore, consent_policy: ConsentPolicy | None = None): ...
+    def delete_memory(self, entry_id: str) -> MemoryEntry | None: ...
+    def update_memory(self, entry_id: str, new_text: str) -> MemoryEntry | None: ...
+    def toggle_pin(self, entry_id: str) -> MemoryEntry | None: ...
+    def export_by_type(self, memory_type: MemoryType) -> str: ...
+    def export_by_scope(self, scope: MemoryScope) -> str: ...
+    def export_by_time_range(self, start: datetime, end: datetime) -> str: ...
+    def clear_by_type(self, memory_type: MemoryType) -> int: ...
+    def clear_by_scope(self, scope: MemoryScope) -> int: ...
+    def clear_by_time_range(self, start: datetime, end: datetime) -> int: ...
+    def search(self, *, query_text="", types=None, scope_filter=None,
+               source_filter=None, sensitivity_filter=None, limit=50) -> list[MemoryEntry]: ...
+    def generate_self_summary(self, query: str = "user preferences and facts") -> str: ...
+```
+
+```python
+# src/ui/memory_consent.py
+class MemoryConsentWindow(ctk.CTk):
+    def __init__(self, manager: MemoryManager, config: NexusConfig | None = None,
+                 on_policy_change: Callable[[ConsentPolicy], None] | None = None): ...
+
+def open_memory_consent(manager: MemoryManager, config: NexusConfig | None = None,
+                        on_policy_change: Callable[[ConsentPolicy], None] | None = None) -> MemoryConsentWindow: ...
+```
+
+```python
+# src/config/settings.py
+class NexusConfig:
+    memory_sensitive_policy: str = "ask"
+    memory_consent_audit_log: str = "~/.nexus/memory_audit.jsonl"
+    memory_pinned_ids: list[str] = field(default_factory=list)
+```
+
+Consent policies control whether sensitive memories are stored (`ask` prompts, `allow` stores unconditionally, `never_store` blocks). Every mutation appends a redacted `MemoryAuditRecord` to the in-memory audit log. The UI exposes search, filter, edit, delete, pin, export, and bulk-clear operations.
 
 ---
 

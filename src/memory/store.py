@@ -8,13 +8,16 @@ import re
 import threading
 import uuid
 from collections import Counter
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 from .models import (
+    ConsentAction,
+    ConsentPolicy,
     DEFAULT_RETENTION,
+    MemoryAuditRecord,
     MemoryEntry,
     MemoryResult,
     MemoryScope,
@@ -51,6 +54,13 @@ def _safe_sensitivity(value: Any, default: str = "low") -> SensitivityLevel:
         return SensitivityLevel(default)
 
 
+def _safe_consent_action(value: Any, default: str = "ask") -> ConsentAction:
+    try:
+        return ConsentAction(value)
+    except ValueError:
+        return ConsentAction(default)
+
+
 def _entry_from_legacy(item: dict[str, Any]) -> MemoryEntry:
     """Convert a legacy v1 memory dict into a v2 MemoryEntry with safe defaults."""
     now = _utc_now().isoformat()
@@ -68,6 +78,7 @@ def _entry_from_legacy(item: dict[str, Any]) -> MemoryEntry:
         metadata=item.get("metadata", {}),
         supersedes=item.get("metadata", {}).get("supersedes"),
         summary_of=tuple(item.get("metadata", {}).get("summary_of", [])),
+        pinned=False,
     )
 
 
@@ -111,6 +122,7 @@ class MemoryStore:
         self.max_age_days = max_age_days
         self._entries: list[MemoryEntry] = []
         self._lock = threading.RLock()
+        self._audit: list[MemoryAuditRecord] = []
         self.load()
 
     @property
@@ -118,6 +130,22 @@ class MemoryStore:
         """Return an immutable snapshot of stored entries."""
         with self._lock:
             return tuple(self._entries)
+
+    @property
+    def audit_log(self) -> tuple[MemoryAuditRecord, ...]:
+        """Return an immutable snapshot of audit records."""
+        with self._lock:
+            return tuple(self._audit)
+
+    def _record_audit(self, action: str, entry_id: str, details: dict[str, Any] | None = None) -> None:
+        record = MemoryAuditRecord(
+            action=action,
+            entry_id=entry_id,
+            timestamp=_utc_now().isoformat(),
+            details=details or {},
+        )
+        with self._lock:
+            self._audit.append(record)
 
     def add(
         self,
@@ -161,9 +189,11 @@ class MemoryStore:
             metadata=dict(metadata or {}),
             supersedes=supersedes,
             summary_of=summary_of,
+            pinned=False,
         )
         with self._lock:
             self._entries.append(entry)
+            self._record_audit("add", entry.id, {"text": text[:200]})
             self.prune(persist=False)
             if persist:
                 self.save()
@@ -241,6 +271,7 @@ class MemoryStore:
                             item["summary_of"] = tuple(item["summary_of"])
                         elif "summary_of" not in item:
                             item["summary_of"] = ()
+                        item.setdefault("pinned", False)
                     self._entries = [MemoryEntry(**item) for item in raw_entries]
             except (OSError, json.JSONDecodeError, TypeError, ValueError, KeyError) as exc:
                 raise ValueError(f"Cannot load memory store from {self.path}") from exc
@@ -260,3 +291,182 @@ class MemoryStore:
             if legacy_count:
                 self.save()
             return legacy_count
+
+    def delete(self, entry_id: str) -> MemoryEntry | None:
+        """Delete a memory by ID. Returns the deleted entry or None."""
+        with self._lock:
+            for idx, entry in enumerate(self._entries):
+                if entry.id == entry_id:
+                    removed = self._entries.pop(idx)
+                    self._record_audit("delete", entry_id, {"text": removed.text[:200]})
+                    self.save()
+                    return removed
+        return None
+
+    def update_text(self, entry_id: str, new_text: str) -> MemoryEntry | None:
+        """Update the text of a memory by ID. Returns the updated entry or None."""
+        new_text = new_text.strip()
+        if not new_text:
+            raise ValueError("Memory text cannot be empty")
+        with self._lock:
+            for idx, entry in enumerate(self._entries):
+                if entry.id == entry_id:
+                    updated = MemoryEntry(
+                        id=entry.id,
+                        memory_type=entry.memory_type,
+                        text=new_text,
+                        source=entry.source,
+                        confidence=entry.confidence,
+                        importance=entry.importance,
+                        sensitivity=entry.sensitivity,
+                        scope=entry.scope,
+                        created_at=entry.created_at,
+                        updated_at=_utc_now().isoformat(),
+                        metadata=dict(entry.metadata),
+                        supersedes=entry.supersedes,
+                        summary_of=entry.summary_of,
+                        pinned=entry.pinned,
+                    )
+                    self._entries[idx] = updated
+                    self._record_audit("update", entry_id, {"new_text": new_text[:200]})
+                    self.save()
+                    return updated
+        return None
+
+    def toggle_pin(self, entry_id: str) -> MemoryEntry | None:
+        """Toggle the pinned state of a memory by ID. Returns the updated entry or None."""
+        with self._lock:
+            for idx, entry in enumerate(self._entries):
+                if entry.id == entry_id:
+                    updated = MemoryEntry(
+                        id=entry.id,
+                        memory_type=entry.memory_type,
+                        text=entry.text,
+                        source=entry.source,
+                        confidence=entry.confidence,
+                        importance=entry.importance,
+                        sensitivity=entry.sensitivity,
+                        scope=entry.scope,
+                        created_at=entry.created_at,
+                        updated_at=_utc_now().isoformat(),
+                        metadata=dict(entry.metadata),
+                        supersedes=entry.supersedes,
+                        summary_of=entry.summary_of,
+                        pinned=not entry.pinned,
+                    )
+                    self._entries[idx] = updated
+                    self._record_audit(
+                        "toggle_pin", entry_id, {"pinned": not entry.pinned}
+                    )
+                    self.save()
+                    return updated
+        return None
+
+    def _filter_by_type(self, memory_type: MemoryType) -> list[MemoryEntry]:
+        return [e for e in self._entries if e.memory_type == memory_type]
+
+    def _filter_by_scope(self, scope: MemoryScope) -> list[MemoryEntry]:
+        return [e for e in self._entries if e.scope == scope]
+
+    def _filter_by_time_range(
+        self, start: datetime | None, end: datetime | None
+    ) -> list[MemoryEntry]:
+        result = []
+        for entry in self._entries:
+            try:
+                created = datetime.fromisoformat(entry.created_at)
+            except ValueError:
+                continue
+            if start is not None and created < start:
+                continue
+            if end is not None and created > end:
+                continue
+            result.append(entry)
+        return result
+
+    def export_by_type(self, memory_type: MemoryType) -> str:
+        """Export memories of a given type as JSON string."""
+        entries = self._filter_by_type(memory_type)
+        payload = {
+            "version": 2,
+            "memory_type": memory_type.value,
+            "exported_at": _utc_now().isoformat(),
+            "entries": [_entry_to_dict(e) for e in entries],
+        }
+        return json.dumps(payload, ensure_ascii=False, indent=2)
+
+    def export_by_scope(self, scope: MemoryScope) -> str:
+        """Export memories of a given scope as JSON string."""
+        entries = self._filter_by_scope(scope)
+        payload = {
+            "version": 2,
+            "scope": scope.value,
+            "exported_at": _utc_now().isoformat(),
+            "entries": [_entry_to_dict(e) for e in entries],
+        }
+        return json.dumps(payload, ensure_ascii=False, indent=2)
+
+    def export_by_time_range(self, start: datetime, end: datetime) -> str:
+        """Export memories within a time range as JSON string."""
+        entries = self._filter_by_time_range(start, end)
+        payload = {
+            "version": 2,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "exported_at": _utc_now().isoformat(),
+            "entries": [_entry_to_dict(e) for e in entries],
+        }
+        return json.dumps(payload, ensure_ascii=False, indent=2)
+
+    def clear_by_type(self, memory_type: MemoryType) -> int:
+        """Delete all memories of a given type. Returns count removed."""
+        with self._lock:
+            to_remove = [e.id for e in self._entries if e.memory_type == memory_type]
+            self._entries = [e for e in self._entries if e.memory_type != memory_type]
+            if to_remove:
+                self._record_audit("clear_by_type", ",".join(to_remove), {"type": memory_type.value})
+                self.save()
+            return len(to_remove)
+
+    def clear_by_scope(self, scope: MemoryScope) -> int:
+        """Delete all memories of a given scope. Returns count removed."""
+        with self._lock:
+            to_remove = [e.id for e in self._entries if e.scope == scope]
+            self._entries = [e for e in self._entries if e.scope != scope]
+            if to_remove:
+                self._record_audit("clear_by_scope", ",".join(to_remove), {"scope": scope.value})
+                self.save()
+            return len(to_remove)
+
+    def clear_by_time_range(self, start: datetime, end: datetime) -> int:
+        """Delete all memories within a time range. Returns count removed."""
+        with self._lock:
+            matched = self._filter_by_time_range(start, end)
+            remove_ids = {entry.id for entry in matched}
+            if not remove_ids:
+                return 0
+            self._entries = [entry for entry in self._entries if entry.id not in remove_ids]
+            self._record_audit(
+                "clear_by_time_range",
+                ",".join(sorted(remove_ids)),
+                {"start": start.isoformat(), "end": end.isoformat()},
+            )
+            self.save()
+            return len(remove_ids)
+
+    def check_consent(self, sensitivity: SensitivityLevel, policy: ConsentPolicy) -> bool:
+        """Check if a memory with given sensitivity can be stored under the policy."""
+        if policy.action == ConsentAction.NEVER_STORE:
+            return False
+        if policy.action == ConsentAction.ALLOW:
+            return True
+        if sensitivity == SensitivityLevel.HIGH:
+            return False
+        if sensitivity == SensitivityLevel.MEDIUM:
+            return False
+        return True
+
+    def contains_sensitive(self, text: str, policy: ConsentPolicy) -> bool:
+        """Check if text contains sensitive keywords per policy."""
+        lowered = text.casefold()
+        return any(keyword in lowered for keyword in policy.sensitive_keywords)
