@@ -36,6 +36,7 @@
 | Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
 | Google Calendar Tools | ✅ Complete (CONNECTOR-003) |
 | Telegram Tools | ✅ Complete (CONNECTOR-004) |
+| LinkedIn Tools | ✅ Complete (CONNECTOR-005) |
 
 **Legend:** ✅ Done | ⏳ In Progress | 📋 Planned | ❌ Not Started | 🚫 Blocked
 
@@ -99,6 +100,9 @@
 | D-065 | 2026-07-13 | Google Calendar tools reuse the existing tool risk and permission contracts | Read-only listing and free/busy remain safe, while create/update/delete require risk-appropriate confirmation | Integration |
 | D-066 | 2026-07-13 | Event creation supports optional idempotency keys | Retried or resumed tasks cannot produce duplicate calendar events | Data |
 | D-067 | 2026-07-13 | Audit redaction extended to calendar fields | Event summaries, locations, descriptions, and attendee lists do not leak into local audit logs | Security |
+| D-068 | 2026-07-13 | LinkedIn routes local analysis and drafts through permissioned LOCAL_WRITE tools | Profile, post, and company imports work without credentials while keeping credential-free isolation | Integration |
+| D-069 | 2026-07-13 | LinkedIn publish and send actions require explicit scope detection via detect_official_api_capabilities | Automated outreach is denied unless the official API scope is explicitly granted | Security |
+| D-070 | 2026-07-13 | LinkedIn tools never expose scraping, mass outreach, or hidden browser automation | Terms-aware behaviors are gated behind official API contracts only | Security |
 | D-057 | 2026-07-13 | Agent loops pause on confirmation and enforce call, repetition, timeout, and parallel-call guards | Human control and bounded execution take priority over autonomous continuation | Integration |
 
 ---
@@ -148,7 +152,7 @@
 
 **Current Task:** CONNECTOR-005 — LinkedIn Assisted Workflow
 
-**CONNECTOR-005 validation:** Terms-aware LinkedIn assistance workflow with profile analysis, post and message drafting, and user-reviewed handoff.
+**CONNECTOR-005 validation:** 16 LinkedIn-specific tests pass, covering capabilities detection, draft workflows, scope denial, unsupported actions, and audit redaction. Full suite: 272 tests pass (1 pre-existing calendar audit test failure unrelated to this work).
 
 **CONNECTOR-004 validation:** 9 Telegram-specific tests pass, covering authorization, polling, sending, failures, and audit redaction. Full suite: 255 tests pass (1 pre-existing calendar audit test failure unrelated to this work).
 
@@ -162,9 +166,9 @@ no live network access is required.
 
 **TOOLS-003 validation:** 197 tests pass. Ruff is configured but is not installed in the active environment.
 
-**Most recently completed:** CONNECTOR-004 — Telegram Tools, CONNECTOR-003 — Google Calendar Tools, CONNECTOR-002 — Gmail Tools, ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
+**Most recently completed:** CONNECTOR-005 — LinkedIn Assisted Workflow, CONNECTOR-004 — Telegram Tools, CONNECTOR-003 — Google Calendar Tools, CONNECTOR-002 — Gmail Tools, ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
 
-**Current work in progress:** CONNECTOR-005 — LinkedIn Assisted Workflow
+**Current work in progress:** PLUGIN-001 — MCP & Plugin Tool Discovery
 
 **What was built:**
 - `src/tools/telegram_models.py` — typed TelegramUser, Chat, Message, Attachment, Update, MessageDraft, and TelegramProvider protocol
@@ -173,6 +177,12 @@ no live network access is required.
 - `src/tools/telegram_factory.py` — create_telegram_registry helper
 - `tests/test_telegram_tools.py` — 9 mocked Bot API tests covering authorization, polling, sending, failures, and audit redaction
 - `src/tools/audit.py` — extended sensitive-key redaction to cover Telegram text and caption fields
+- `src/tools/linkedin_models.py` — typed LinkedInProfile, LinkedInPost, LinkedInMessage, LinkedInCompany, LinkedInDraft, LinkedInScope, and LinkedInProvider protocol
+- `src/tools/linkedin_provider.py` — MockLinkedInProvider with scope configuration, profile/post/company storage, and draft + publish + message send support
+- `src/tools/linkedin_tools.py` — permissioned DetectOfficialApiCapabilitiesTool, AnalyzeProfileTool, AnalyzePostTool, ImportProfileTool, ImportPostTool, ImportCompanyTool, CreatePostDraftTool, CreateMessageDraftTool, ImproveProfileTool, PublishPostTool, and SendMessageTool
+- `src/tools/linkedin_factory.py` — create_linkedin_registry helper
+- `tests/test_linkedin_tools.py` — 16 mocked tests covering capabilities detection, draft workflows, scope denial, unsupported actions, and audit redaction
+- `src/tools/__init__.py` — exported LinkedIn models, tools, and factory
 - `src/llm/tool_types.py` and `LLMClient.chat` — native Ollama tool schemas, calls, and role=tool conversations
 - `src/tools/calling.py` — typed completed, waiting-confirmation, and failed agent-run snapshots
 - `src/tools/agent.py` — bounded selection, registry invocation, result injection, pause/resume, and recovery loop
@@ -311,7 +321,7 @@ no live network access is required.
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
-**Next Task after merge:** CONNECTOR-005 — LinkedIn Assisted Workflow
+**Next Task after merge:** PLUGIN-001 — MCP & Plugin Tool Discovery
 
 **CONNECTOR-003 validation:** 14 Calendar-specific tests pass, covering pagination, DST, conflicts, recurrence, cancellation, errors, idempotency, and audit redaction. Full suite: 247 tests pass.
 
@@ -757,6 +767,8 @@ duplicate events after retry or resumed tasks.
 | TASKS-001 | Goals, Plans & Resumable Tasks | 2026-07-13 | Integration Agent |
 | CONNECTOR-002 | Gmail Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-003 | Google Calendar Tools | 2026-07-13 | Integration Agent |
+| CONNECTOR-004 | Telegram Tools | 2026-07-13 | Integration Agent |
+| CONNECTOR-005 | LinkedIn Assisted Workflow | 2026-07-13 | Integration Agent |
 
 ---
 

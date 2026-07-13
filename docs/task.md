@@ -864,7 +864,7 @@ so that Nexus can assist with messaging without impersonating my personal accoun
 
 ### Task: CONNECTOR-005 — LinkedIn Assisted Workflow
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 ---
 
@@ -881,12 +881,12 @@ so that I can work efficiently without unsafe automation or account-policy viola
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Profile, post, message, and company content can be imported or entered for local analysis
-- [ ] **AC-2:** Nexus can create editable post, profile, and response drafts without publishing them
-- [ ] **AC-3:** Official API capability and granted scopes are detected before offering account actions
-- [ ] **AC-4:** Scraping, mass outreach, and hidden browser automation are denied by default
-- [ ] **AC-5:** Any supported publish or message action requires preview and explicit confirmation
-- [ ] **AC-6:** Tests cover draft workflows, unsupported actions, scope denial, and sensitive data handling
+- [x] **AC-1:** Profile, post, message, and company content can be imported or entered for local analysis
+- [x] **AC-2:** Nexus can create editable post, profile, and response drafts without publishing them
+- [x] **AC-3:** Official API capability and granted scopes are detected before offering account actions
+- [x] **AC-4:** Scraping, mass outreach, and hidden browser automation are denied by default
+- [x] **AC-5:** Any supported publish or message action requires preview and explicit confirmation
+- [x] **AC-6:** Tests cover draft workflows, unsupported actions, scope denial, and sensitive data handling
 
 ## Definition of Done
 
@@ -897,6 +897,9 @@ so that I can work efficiently without unsafe automation or account-policy viola
 ---
 
 **EST:** 5 SP
+
+**RT:** 2026-07-13
+**QA:** 2026-07-13
 
 ---
 
@@ -1307,6 +1310,7 @@ so that the assistant can match my preferred mood and desktop style.
 | CONNECTOR-002 | Gmail Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-003 | Google Calendar Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-004 | Telegram Tools | 2026-07-13 | Integration Agent |
+| CONNECTOR-005 | LinkedIn Assisted Workflow | 2026-07-13 | Integration Agent |
 
 ---
 

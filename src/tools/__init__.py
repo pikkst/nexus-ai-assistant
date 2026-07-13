@@ -75,6 +75,29 @@ from .telegram_tools import (
     SendAttachmentTool,
     SendMessageTool,
 )
+from .linkedin_models import (
+    LinkedInCompany,
+    LinkedInDraft,
+    LinkedInMessage,
+    LinkedInPost,
+    LinkedInProfile,
+    LinkedInProvider,
+    LinkedInScope,
+)
+from .linkedin_tools import (
+    AnalyzePostTool,
+    AnalyzeProfileTool,
+    CreateMessageDraftTool,
+    CreatePostDraftTool,
+    DetectOfficialApiCapabilitiesTool,
+    ImproveProfileTool,
+    ImportCompanyTool,
+    ImportPostTool,
+    ImportProfileTool,
+    PublishPostTool,
+    SendMessageTool,
+)
+from .linkedin_factory import create_linkedin_registry
 from .telegram_factory import create_telegram_registry
 
 __all__ = [
@@ -102,4 +125,10 @@ __all__ = [
     "GetBotInfoTool", "GetChatTool", "GetUpdatesTool", "DraftMessageTool",
     "SendMessageTool", "SendAttachmentTool", "ListAuthorizedChatsTool",
     "create_telegram_registry",
+    "LinkedInCompany", "LinkedInDraft", "LinkedInMessage", "LinkedInPost",
+    "LinkedInProfile", "LinkedInProvider", "LinkedInScope",
+    "AnalyzePostTool", "AnalyzeProfileTool", "CreateMessageDraftTool",
+    "CreatePostDraftTool", "DetectOfficialApiCapabilitiesTool", "ImproveProfileTool",
+    "ImportCompanyTool", "ImportPostTool", "ImportProfileTool",
+    "PublishPostTool", "SendMessageTool", "create_linkedin_registry",
 ]
