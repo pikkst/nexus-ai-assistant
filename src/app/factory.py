@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 from pathlib import Path
 
 from src.audio import AudioCapture, AudioCaptureConfig, AudioPlayback, AudioPlaybackConfig

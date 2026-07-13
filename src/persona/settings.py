@@ -174,18 +174,3 @@ class PersonaManager:
             return cls(settings=PersonaSettings(**data), path=target)
         except Exception:
             return cls()
-        try:
-            data: dict[str, Any] = json.loads(target.read_text(encoding="utf-8"))
-            if not data:
-                return cls()
-            start = data.pop("quiet_hours_start", None)
-            end = data.pop("quiet_hours_end", None)
-            if start:
-                data["quiet_hours_start"] = datetime.fromisoformat(start).time()
-            if end:
-                data["quiet_hours_end"] = datetime.fromisoformat(end).time()
-            if "mode" in data:
-                data["mode"] = PersonaMode(data["mode"])
-            return cls(settings=PersonaSettings(**data), path=target)
-        except Exception:
-            return cls()

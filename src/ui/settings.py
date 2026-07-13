@@ -6,7 +6,7 @@ CustomTkinter-based settings window for audio, TTS, language, and more.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 from typing import Callable
 
 import customtkinter as ctk
