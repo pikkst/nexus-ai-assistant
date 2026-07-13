@@ -35,6 +35,7 @@
 | Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
 | Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
 | Google Calendar Tools | ✅ Complete (CONNECTOR-003) |
+| Telegram Tools | ✅ Complete (CONNECTOR-004) |
 
 **Legend:** ✅ Done | ⏳ In Progress | 📋 Planned | ❌ Not Started | 🚫 Blocked
 
@@ -145,7 +146,11 @@
 
 ## 5. Current Sprint Context
 
-**Current Task:** CONNECTOR-003 — Google Calendar Tools
+**Current Task:** CONNECTOR-005 — LinkedIn Assisted Workflow
+
+**CONNECTOR-005 validation:** Terms-aware LinkedIn assistance workflow with profile analysis, post and message drafting, and user-reviewed handoff.
+
+**CONNECTOR-004 validation:** 9 Telegram-specific tests pass, covering authorization, polling, sending, failures, and audit redaction. Full suite: 255 tests pass (1 pre-existing calendar audit test failure unrelated to this work).
 
 **CONNECTOR-003 validation:** 14 Calendar-specific tests pass, covering pagination, DST, conflicts, recurrence, cancellation, errors, idempotency, and audit redaction. Full suite: 247 tests pass.
 
@@ -157,9 +162,17 @@ no live network access is required.
 
 **TOOLS-003 validation:** 197 tests pass. Ruff is configured but is not installed in the active environment.
 
-**Most recently completed:** CONNECTOR-003 — Google Calendar Tools, CONNECTOR-002 — Gmail Tools, ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
+**Most recently completed:** CONNECTOR-004 — Telegram Tools, CONNECTOR-003 — Google Calendar Tools, CONNECTOR-002 — Gmail Tools, ARCH-007 — Memory / Vector Store, ARCH-006 — LLM Integration, ARCH-005 — Text-to-Speech Engine
+
+**Current work in progress:** CONNECTOR-005 — LinkedIn Assisted Workflow
 
 **What was built:**
+- `src/tools/telegram_models.py` — typed TelegramUser, Chat, Message, Attachment, Update, MessageDraft, and TelegramProvider protocol
+- `src/tools/telegram_provider.py` — MockTelegramProvider with bot identity, authorized chats, polling, and send support
+- `src/tools/telegram_tools.py` — permissioned GetBotInfoTool, ListAuthorizedChatsTool, GetChatTool, GetUpdatesTool, DraftMessageTool, SendMessageTool, and SendAttachmentTool
+- `src/tools/telegram_factory.py` — create_telegram_registry helper
+- `tests/test_telegram_tools.py` — 9 mocked Bot API tests covering authorization, polling, sending, failures, and audit redaction
+- `src/tools/audit.py` — extended sensitive-key redaction to cover Telegram text and caption fields
 - `src/llm/tool_types.py` and `LLMClient.chat` — native Ollama tool schemas, calls, and role=tool conversations
 - `src/tools/calling.py` — typed completed, waiting-confirmation, and failed agent-run snapshots
 - `src/tools/agent.py` — bounded selection, registry invocation, result injection, pause/resume, and recovery loop
@@ -298,7 +311,7 @@ no live network access is required.
 `pyproject.toml` but are not installed in the current environment. All new Python files compile,
 stay within the project's 150-line limit, and `git diff --check` passes.
 
-**Next Task after merge:** TOOLS-003 — Local Development Toolset
+**Next Task after merge:** CONNECTOR-005 — LinkedIn Assisted Workflow
 
 **CONNECTOR-003 validation:** 14 Calendar-specific tests pass, covering pagination, DST, conflicts, recurrence, cancellation, errors, idempotency, and audit redaction. Full suite: 247 tests pass.
 
