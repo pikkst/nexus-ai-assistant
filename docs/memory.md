@@ -20,7 +20,7 @@
 | TTS | 📋 Planned |
 | LLM Integration | ✅ Complete (async Ollama client, prompt/history support, streaming) |
 | Camera/Vision | ✅ Complete (camera.py, tests added) |
-| Memory Store | ✅ Complete (JSON persistence, similarity search, pruning) |
+| Memory Store | ✅ Complete (structured types, provenance, manager, retention, 16 tests) |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
 | Selectable Face Themes | ✅ Complete (UI-FACE-002) |
 | User Interface | 📋 Planned |
@@ -233,7 +233,10 @@ no live network access is required.
 - `tests/test_app.py` and `tests/test_app_factory.py` — end-to-end, audio, lifecycle, recovery, and configuration smoke tests
 - `src/config/settings.py` — persisted audio-input, audio-output, and memory feature toggles
 - `src/memory/store.py` — thread-safe JSON memory service with atomic persistence, token-frequency cosine search, metadata, and timestamps
-- `tests/test_memory.py` — tests for storage, retrieval ranking, custom paths, corrupt data, and age/capacity pruning
+- `src/memory/models.py` — typed memory types (working, episodic, semantic, preference, procedural), provenance fields (source, confidence, importance, sensitivity, scope), MemoryEntry, MemoryResult, RetentionPolicy
+- `src/memory/retrieval.py` — unified MemoryRetriever combining keyword and optional embedding search with type/scope filtering and token budgets
+- `src/memory/manager.py` — MemoryManager with promotion, duplicate consolidation, contradiction resolution, summarization, and retention policies
+- `tests/test_memory.py` — tests for storage, retrieval ranking, custom paths, corrupt data, age/capacity pruning, migration, promotion, consolidation, contradiction, retention, and hybrid retrieval
 - `src/config/settings.py` — configurable memory storage format, capacity, and maximum age
 - `src/llm/client.py` — async Ollama chat client, structured responses, streaming, and typed backend errors
 - `src/llm/prompts.py` — validated system prompt and conversation history construction
@@ -782,6 +785,81 @@ duplicate events after retry or resumed tasks.
 | CONNECTOR-003 | Google Calendar Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-004 | Telegram Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-005 | LinkedIn Assisted Workflow | 2026-07-13 | Integration Agent |
+| MEM-002 | Structured Multi-Layer Memory | 2026-07-13 | Backend Agent |
+
+---
+
+### Structured Memory API
+
+```python
+# src/memory/models.py
+class MemoryType(str, Enum):
+    WORKING = "working"
+    EPISODIC = "episodic"
+    SEMANTIC = "semantic"
+    PREFERENCE = "preference"
+    PROCEDURAL = "procedural"
+
+class MemoryScope(str, Enum):
+    GLOBAL = "global"
+    PROJECT = "project"
+    SESSION = "session"
+
+class SensitivityLevel(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+class MemorySource(str, Enum):
+    USER_STATED = "user_stated"
+    ASSISTANT_INFERRED = "assistant_inferred"
+    TOOL_OUTPUT = "tool_output"
+    EXTERNAL = "external"
+
+@dataclass(frozen=True, slots=True)
+class MemoryEntry:
+    id: str
+    memory_type: MemoryType
+    text: str
+    source: MemorySource
+    confidence: float
+    importance: float
+    sensitivity: SensitivityLevel
+    scope: MemoryScope
+    created_at: str
+    updated_at: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+    supersedes: str | None = None
+    summary_of: tuple[str, ...] = ()
+
+class MemoryManager:
+    def add_working_memory(self, text: str, ...) -> MemoryEntry
+    def promote_to_long_term(self, entry_id: str) -> MemoryEntry | None
+    def consolidate_duplicates(self) -> list[MemoryEntry]
+    def handle_contradiction(self, existing: MemoryEntry, incoming: MemoryEntry) -> ContradictionRecord | None
+    def summarize(self, source_ids: tuple[str, ...], summary_text: str) -> MemorySummary | None
+    def apply_retention(self, policy: RetentionPolicy | None = None) -> int
+    def build_retriever(self, *, embedding_fn=None, ...) -> MemoryRetriever
+    def retrieve(self, query: RetrievalQuery, *, embedding_fn=None) -> list[MemoryResult]
+```
+
+```python
+# src/memory/retrieval.py
+class RetrievalQuery:
+    text: str
+    types: tuple[MemoryType, ...] | None = None
+    scope: tuple[str, ...] | None = None
+    limit: int = 5
+    token_budget: int | None = None
+    min_confidence: float = 0.0
+    min_importance: float = 0.0
+
+class MemoryRetriever:
+    def __init__(self, entries, *, embedding_fn=None, keyword_weight=0.6, embedding_weight=0.4)
+    def search(self, query: RetrievalQuery) -> list[MemoryResult]
+```
+
+Storage is a versioned JSON document (v1 legacy auto-migrates to v2). Search uses token-frequency cosine similarity as baseline; an optional `embedding_fn` enables hybrid retrieval. Retention policies are type-specific.
 
 ---
 

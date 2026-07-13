@@ -983,7 +983,9 @@ so that I can trust progress and continue work across sessions.
 
 ### Task: MEM-002 — Structured Multi-Layer Memory
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
+
+**EST:** 8 SP | **RT:** 2026-07-13 | **QA:** 2026-07-13
 
 ---
 
@@ -1000,18 +1002,18 @@ so that it becomes more helpful without storing everything indiscriminately.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Schema supports working, episodic, semantic, preference, and procedural memory types
-- [ ] **AC-2:** Every memory records source, confidence, importance, sensitivity, timestamps, and scope
-- [ ] **AC-3:** Memory manager decides what is promoted to long-term memory
-- [ ] **AC-4:** Retrieval combines keyword and optional local embedding search behind one interface
-- [ ] **AC-5:** Duplicate consolidation, contradiction handling, summaries, and retention policies are supported
-- [ ] **AC-6:** Existing JSON memories migrate safely or remain readable
+- [x] **AC-1:** Schema supports working, episodic, semantic, preference, and procedural memory types
+- [x] **AC-2:** Every memory records source, confidence, importance, sensitivity, timestamps, and scope
+- [x] **AC-3:** Memory manager decides what is promoted to long-term memory
+- [x] **AC-4:** Retrieval combines keyword and optional local embedding search behind one interface
+- [x] **AC-5:** Duplicate consolidation, contradiction handling, summaries, and retention policies are supported
+- [x] **AC-6:** Existing JSON memories migrate safely or remain readable
 
 ## Definition of Done
 
-- Migration and retrieval tests pass
+- Migration and retrieval tests pass (16/16)
 - Context builder can request only relevant memory types within a token budget
-- PR merged from `feature/structured-memory` into `develop`
+- PR created from `feature/structured-memory` into `develop`
 
 ---
 
