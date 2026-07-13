@@ -127,3 +127,13 @@ def complete_goal(goal: Goal) -> None:
     if not goal.steps or any(step.status is not StepStatus.COMPLETED for step in goal.steps):
         raise TaskStateError("Every plan step must be completed")
     goal.status = GoalStatus.COMPLETED
+
+
+def revert_step_for_rework(goal: Goal, step_id: str) -> None:
+    step = find_step(goal, step_id)
+    if step.status is not StepStatus.FAILED:
+        raise TaskStateError("Only a failed step can be reverted for rework")
+    step.status = StepStatus.PENDING
+    step.result = None
+    step.updated_at = utc_now()
+    goal.status = GoalStatus.PAUSED

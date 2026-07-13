@@ -10,6 +10,7 @@ from .models import (
     PlanStep,
     StepResult,
     StepStatus,
+    SuccessCriterion,
     TaskEvent,
     TaskStateError,
 )
@@ -17,6 +18,6 @@ from .store import TaskStore
 
 __all__ = [
     "Blocker", "Evidence", "Goal", "GoalStatus", "PlanStep", "StepResult",
-    "StepStatus", "TaskEvent", "TaskManager", "TaskStateError", "TaskStore",
-    "create_task_manager",
+    "StepStatus", "SuccessCriterion", "TaskEvent", "TaskManager", "TaskStateError",
+    "TaskStore", "create_task_manager",
 ]
