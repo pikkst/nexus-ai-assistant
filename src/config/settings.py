@@ -50,6 +50,9 @@ class NexusConfig:
     memory_storage_format: str = "json"
     memory_max_entries: int = 1000
     memory_max_age_days: int = 90
+    memory_sensitive_policy: str = "ask"
+    memory_consent_audit_log: str = str(Path("~/.nexus/memory_audit.jsonl").expanduser())
+    memory_pinned_ids: list[str] = field(default_factory=list)
 
     # Tasks
     tasks_path: str = str(Path("~/.nexus/tasks").expanduser())

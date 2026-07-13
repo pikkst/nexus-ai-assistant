@@ -34,6 +34,43 @@ class MemorySource(str, Enum):
     EXTERNAL = "external"
 
 
+class ConsentAction(str, Enum):
+    ASK = "ask"
+    ALLOW = "allow"
+    NEVER_STORE = "never_store"
+
+
+@dataclass(frozen=True, slots=True)
+class ConsentPolicy:
+    """Policy for how sensitive information is handled."""
+
+    action: ConsentAction = ConsentAction.ASK
+    sensitive_keywords: tuple[str, ...] = (
+        "password",
+        "credit card",
+        "ssn",
+        "social security",
+        "secret",
+        "private key",
+        "token",
+        "api key",
+    )
+    ask_prompt: str = (
+        "Nexus detected potentially sensitive information. "
+        "Allow storing this memory? (yes/no/never)"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryAuditRecord:
+    """Audit trail entry for a memory change."""
+
+    action: str
+    entry_id: str
+    timestamp: str
+    details: dict[str, Any] = field(default_factory=dict)
+
+
 @dataclass(frozen=True, slots=True)
 class MemoryEntry:
     """One structured memory record with full provenance."""
@@ -51,6 +88,7 @@ class MemoryEntry:
     metadata: dict[str, Any] = field(default_factory=dict)
     supersedes: str | None = None
     summary_of: tuple[str, ...] = ()
+    pinned: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,3 +142,16 @@ DEFAULT_RETENTION: dict[MemoryType, RetentionPolicy] = {
     MemoryType.PREFERENCE: RetentionPolicy(max_age_days=None, max_entries=100, min_confidence=0.3),
     MemoryType.PROCEDURAL: RetentionPolicy(max_age_days=None, max_entries=150, min_confidence=0.4),
 }
+
+DEFAULT_SENSITIVE_KEYWORDS: tuple[str, ...] = (
+    "password",
+    "credit card",
+    "ssn",
+    "social security",
+    "secret",
+    "private key",
+    "token",
+    "api key",
+)
+
+CONSENT_POLICY = ConsentPolicy()

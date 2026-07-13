@@ -2,8 +2,13 @@
 
 from .manager import MemoryManager
 from .models import (
-    DEFAULT_RETENTION,
+    CONSENT_POLICY,
+    ConsentAction,
+    ConsentPolicy,
     ContradictionRecord,
+    DEFAULT_RETENTION,
+    DEFAULT_SENSITIVE_KEYWORDS,
+    MemoryAuditRecord,
     MemoryEntry,
     MemoryResult,
     MemoryScope,
@@ -17,9 +22,13 @@ from .retrieval import EmbeddingFn, MemoryRetriever, RetrievalQuery
 from .store import MemoryStore
 
 __all__ = [
-    "DEFAULT_RETENTION",
+    "CONSENT_POLICY",
+    "ConsentAction",
+    "ConsentPolicy",
     "ContradictionRecord",
-    "EmbeddingFn",
+    "DEFAULT_RETENTION",
+    "DEFAULT_SENSITIVE_KEYWORDS",
+    "MemoryAuditRecord",
     "MemoryEntry",
     "MemoryManager",
     "MemoryResult",

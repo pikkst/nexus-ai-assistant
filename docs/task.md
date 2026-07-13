@@ -1023,7 +1023,7 @@ so that it becomes more helpful without storing everything indiscriminately.
 
 ### Task: MEM-003 — Memory Consent & Management UI
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 ---
 
@@ -1040,12 +1040,12 @@ so that personalization remains understandable and reversible.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** UI lists memories by type, scope, source, and sensitivity
-- [ ] **AC-2:** User can search, edit, delete, pin, and correct individual memories
-- [ ] **AC-3:** User can export or clear memory by type, project, or time range
-- [ ] **AC-4:** Sensitive information follows configurable ask, allow, or never-store policy
-- [ ] **AC-5:** Nexus can answer “What do you remember about me?” from actual stored data
-- [ ] **AC-6:** Memory changes are audited and immediately affect retrieval
+- [x] **AC-1:** UI lists memories by type, scope, source, and sensitivity
+- [x] **AC-2:** User can search, edit, delete, pin, and correct individual memories
+- [x] **AC-3:** User can export or clear memory by type, project, or time range
+- [x] **AC-4:** Sensitive information follows configurable ask, allow, or never-store policy
+- [x] **AC-5:** Nexus can answer "What do you remember about me?" from actual stored data
+- [x] **AC-6:** Memory changes are audited and immediately affect retrieval
 
 ## Definition of Done
 
@@ -1056,6 +1056,9 @@ so that personalization remains understandable and reversible.
 ---
 
 **EST:** 5 SP
+
+**RT:** 2026-07-13
+**QA:** 2026-07-13
 
 ---
 
@@ -1316,6 +1319,7 @@ so that the assistant can match my preferred mood and desktop style.
 | CONNECTOR-004 | Telegram Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-005 | LinkedIn Assisted Workflow | 2026-07-13 | Integration Agent |
 | PLUGIN-001 | MCP & Plugin Tool Discovery | 2026-07-13 | Integration Agent |
+| MEM-003 | Memory Consent & Management UI | 2026-07-13 | Backend Agent |
 
 ---
 

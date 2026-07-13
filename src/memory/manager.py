@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import Sequence
 
 from .models import (
+    ConsentAction,
+    ConsentPolicy,
     DEFAULT_RETENTION,
     ContradictionRecord,
     MemoryEntry,
@@ -25,8 +28,18 @@ logger = logging.getLogger(__name__)
 class MemoryManager:
     """Decides what is promoted, consolidated, and retained."""
 
-    def __init__(self, store: MemoryStore) -> None:
+    def __init__(self, store: MemoryStore, consent_policy: ConsentPolicy | None = None) -> None:
         self.store = store
+        self.consent_policy = consent_policy or ConsentPolicy()
+
+    def _check_consent(self, sensitivity: SensitivityLevel, text: str) -> bool:
+        if self.consent_policy.action == ConsentAction.NEVER_STORE:
+            return False
+        if self.consent_policy.action == ConsentAction.ALLOW:
+            return True
+        if self.store.contains_sensitive(text, self.consent_policy):
+            return False
+        return True
 
     def add_working_memory(
         self,
@@ -38,8 +51,11 @@ class MemoryManager:
         sensitivity: SensitivityLevel = SensitivityLevel.LOW,
         scope: MemoryScope = MemoryScope.SESSION,
         metadata: dict[str, Any] | None = None,
-    ) -> MemoryEntry:
-        """Store short-lived working memory and return the entry."""
+    ) -> MemoryEntry | None:
+        """Store short-lived working memory and return the entry, or None if consent denied."""
+        if not self._check_consent(sensitivity, text):
+            logger.debug("Consent denied for working memory: %s", text[:100])
+            return None
         return self.store.add(
             text,
             memory_type=MemoryType.WORKING,
@@ -72,9 +88,11 @@ class MemoryManager:
                         metadata=dict(entry.metadata),
                         supersedes=entry.supersedes,
                         summary_of=entry.summary_of,
+                        pinned=entry.pinned,
                     )
                     idx = self.store._entries.index(entry)
                     self.store._entries[idx] = promoted
+                    self.store._record_audit("promote", entry_id)
                     self.store.save()
                     return promoted
         return None
@@ -129,6 +147,7 @@ class MemoryManager:
                             metadata=dict(entry.metadata),
                             supersedes=incoming.id,
                             summary_of=entry.summary_of,
+                            pinned=entry.pinned,
                         )
                         self.store._entries[idx] = updated
                         self.store.save()
@@ -229,3 +248,89 @@ class MemoryManager:
         """Retrieve memories matching the query."""
         retriever = self.build_retriever(embedding_fn=embedding_fn)
         return retriever.search(query)
+
+    def search(
+        self,
+        *,
+        query_text: str = "",
+        types: tuple[MemoryType, ...] | None = None,
+        scope_filter: tuple[str, ...] | None = None,
+        source_filter: tuple[str, ...] | None = None,
+        sensitivity_filter: tuple[str, ...] | None = None,
+        limit: int = 50,
+    ) -> list[MemoryEntry]:
+        """Search memories with optional filters, returning MemoryEntry objects."""
+        if query_text:
+            type_values = types
+            scope_values = tuple(MemoryScope(s) for s in scope_filter) if scope_filter else None
+            query = RetrievalQuery(
+                text=query_text,
+                types=type_values,
+                scope=scope_values,
+                limit=limit,
+            )
+            results = self.retrieve(query)
+            entries = [r.entry for r in results]
+        else:
+            entries = list(self.store.entries)
+
+        if types:
+            entries = [e for e in entries if e.memory_type in types]
+        if scope_filter:
+            scopes = {MemoryScope(s) for s in scope_filter}
+            entries = [e for e in entries if e.scope in scopes]
+        if source_filter:
+            sources = {MemorySource(s) for s in source_filter}
+            entries = [e for e in entries if e.source in sources]
+        if sensitivity_filter:
+            sensitivities = {SensitivityLevel(s) for s in sensitivity_filter}
+            entries = [e for e in entries if e.sensitivity in sensitivities]
+        return entries[:limit]
+
+    def delete_memory(self, entry_id: str) -> MemoryEntry | None:
+        """Delete a memory by ID. Returns the deleted entry or None."""
+        return self.store.delete(entry_id)
+
+    def update_memory(self, entry_id: str, new_text: str) -> MemoryEntry | None:
+        """Update the text of a memory by ID. Returns the updated entry or None."""
+        return self.store.update_text(entry_id, new_text)
+
+    def toggle_pin(self, entry_id: str) -> MemoryEntry | None:
+        """Toggle the pinned state of a memory by ID."""
+        return self.store.toggle_pin(entry_id)
+
+    def export_by_type(self, memory_type: MemoryType) -> str:
+        """Export memories of a given type as JSON string."""
+        return self.store.export_by_type(memory_type)
+
+    def export_by_scope(self, scope: MemoryScope) -> str:
+        """Export memories of a given scope as JSON string."""
+        return self.store.export_by_scope(scope)
+
+    def export_by_time_range(self, start: datetime, end: datetime) -> str:
+        """Export memories within a time range as JSON string."""
+        return self.store.export_by_time_range(start, end)
+
+    def clear_by_type(self, memory_type: MemoryType) -> int:
+        """Delete all memories of a given type. Returns count removed."""
+        return self.store.clear_by_type(memory_type)
+
+    def clear_by_scope(self, scope: MemoryScope) -> int:
+        """Delete all memories of a given scope. Returns count removed."""
+        return self.store.clear_by_scope(scope)
+
+    def clear_by_time_range(self, start: datetime, end: datetime) -> int:
+        """Delete all memories within a time range. Returns count removed."""
+        return self.store.clear_by_time_range(start, end)
+
+    def generate_self_summary(self, query: str = "user preferences and facts") -> str:
+        """Generate a human-readable summary answering 'What do you remember about me?'."""
+        retriever = self.build_retriever()
+        results = retriever.search(RetrievalQuery(query, limit=20))
+        if not results:
+            return "I don't have any memories stored yet."
+        lines = ["Here is what I remember about you:\n"]
+        for result in results:
+            entry = result.entry
+            lines.append(f"- [{entry.memory_type.value}] {entry.text}")
+        return "\n".join(lines)
