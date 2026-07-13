@@ -18,6 +18,9 @@ from typing import Any
 import numpy as np
 
 
+logger = logging.getLogger(__name__)
+
+
 @dataclass
 class CameraCaptureConfig:
     """Configuration for CameraCapture."""
@@ -73,27 +76,33 @@ class CameraCapture:
         Logs a warning and returns silently if the camera is unavailable.
         """
         if self._running.is_set():
+            logger.debug("CameraCapture already running")
             return
+
+        logger.info(
+            "CameraCapture starting: device_index=%s width=%s height=%s fps=%s",
+            self.config.device_index,
+            self.config.width,
+            self.config.height,
+            self.config.fps,
+        )
 
         try:
             import cv2  # noqa: F401
+            logger.debug("OpenCV imported successfully")
         except ImportError:
-            logging.getLogger(__name__).error(
-                "OpenCV (cv2) is not installed. Cannot start camera capture."
-            )
+            logger.error("OpenCV (cv2) is not installed. Cannot start camera capture.")
             return
 
         cap = cv2.VideoCapture(self.config.device_index)
         if not cap.isOpened():
-            logging.getLogger(__name__).warning(
-                "Camera device %s is unavailable. Camera capture disabled.",
-                self.config.device_index,
-            )
+            logger.warning("Camera device %s is unavailable. Camera capture disabled.", self.config.device_index)
             return
 
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.config.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.config.height)
         cap.set(cv2.CAP_PROP_FPS, self.config.fps)
+        logger.debug("Camera properties set: width=%s height=%s fps=%s", self.config.width, self.config.height, self.config.fps)
 
         self._cap = cap
         self._frame_queue = queue.Queue(maxsize=10)
@@ -105,6 +114,7 @@ class CameraCapture:
             daemon=True,
         )
         self._thread.start()
+        logger.info("CameraCapture started successfully")
 
     async def stop(self) -> None:
         """Stop camera capture and release resources."""

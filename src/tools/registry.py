@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import logging
 from collections.abc import Iterable
 from datetime import datetime
 
@@ -20,6 +21,9 @@ from .models import (
     utc_now,
 )
 from .permissions import PermissionDecision, PermissionPolicy
+
+
+logger = logging.getLogger(__name__)
 
 
 class ToolRegistry:
@@ -70,9 +74,16 @@ class ToolRegistry:
         timeout: float | None = None,
     ) -> ToolResult:
         started_at = utc_now()
+        logger.info(
+            "ToolRegistry.invoke start: tool=%s confirmed=%s timeout=%s",
+            request.tool_name,
+            confirmed,
+            timeout,
+        )
         try:
             tool = self.get(request.tool_name)
         except ToolError as exc:
+            logger.warning("ToolRegistry.invoke rejected: tool=%s error=%s", request.tool_name, exc)
             self.audit_log.record(
                 request, RiskLevel.READ_ONLY, status="rejected", started_at=started_at,
                 error_code=exc.code,
@@ -84,6 +95,7 @@ class ToolRegistry:
             required = decision is PermissionDecision.CONFIRM
             message = "User confirmation required" if required else "Tool risk is denied by policy"
             error = ToolPermissionError(message, confirmation_required=required)
+            logger.warning("ToolRegistry.invoke blocked: tool=%s decision=%s message=%s", request.tool_name, decision.value, message)
             self.audit_log.record(
                 request, tool.risk, status="rejected", started_at=started_at,
                 error_code=error.code,
@@ -95,8 +107,10 @@ class ToolRegistry:
             limit = self.default_timeout if timeout is None else timeout
             if limit <= 0:
                 raise ToolValidationError("timeout must be greater than zero")
+            logger.debug("ToolRegistry.invoke executing: tool=%s args=%s", request.tool_name, request.arguments)
             output = await asyncio.wait_for(tool.execute(dict(request.arguments)), timeout=limit)
         except asyncio.CancelledError:
+            logger.warning("ToolRegistry.invoke cancelled: tool=%s", request.tool_name)
             self.audit_log.record(
                 request, tool.risk, status="cancelled", started_at=started_at,
                 error_code="cancelled",
@@ -104,12 +118,14 @@ class ToolRegistry:
             raise
         except TimeoutError:
             error = ToolError("Tool invocation timed out", code="timeout")
+            logger.error("ToolRegistry.invoke timeout: tool=%s limit=%s", request.tool_name, limit)
             self.audit_log.record(
                 request, tool.risk, status="failed", started_at=started_at,
                 error_code=error.code,
             )
             return self._failure(request, started_at, error)
         except ToolError as exc:
+            logger.error("ToolRegistry.invoke tool error: tool=%s error=%s", request.tool_name, exc)
             self.audit_log.record(
                 request, tool.risk, status="failed", started_at=started_at,
                 error_code=exc.code,
@@ -117,6 +133,7 @@ class ToolRegistry:
             return self._failure(request, started_at, exc)
         except Exception as exc:
             error = ToolError(str(exc), code="execution_error")
+            logger.error("ToolRegistry.invoke execution error: tool=%s error=%s", request.tool_name, exc, exc_info=True)
             self.audit_log.record(
                 request, tool.risk, status="failed", started_at=started_at,
                 error_code=error.code,
@@ -124,6 +141,7 @@ class ToolRegistry:
             return self._failure(request, started_at, error)
 
         finished_at = utc_now()
+        logger.info("ToolRegistry.invoke success: tool=%s duration=%.3fs output=%r", request.tool_name, (finished_at - started_at).total_seconds(), str(output)[:200])
         self.audit_log.record(request, tool.risk, status="succeeded", started_at=started_at)
         return ToolResult(
             request_id=request.id,

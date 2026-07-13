@@ -7,6 +7,7 @@ Non-blocking with internal queue and background thread.
 
 from __future__ import annotations
 
+import logging
 import queue
 import threading
 from collections.abc import Callable
@@ -20,6 +21,9 @@ try:
     import pyaudio
 except ImportError:
     pyaudio = None
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -74,31 +78,29 @@ class AudioPlayback:
         Logs a warning and returns silently if no speakers are available.
         """
         if self._running.is_set():
+            logger.debug("AudioPlayback already running")
             return
 
         if pyaudio is None:
-            import logging
-            logging.getLogger(__name__).warning(
-                "PyAudio not installed. Audio playback disabled."
-            )
+            logger.warning("PyAudio not installed. Audio playback disabled.")
             return
 
         self._pyaudio = pyaudio.PyAudio()
+        logger.debug("PyAudio initialized for playback")
 
         try:
             device_info = self._pyaudio.get_default_output_device_info()
             device_index = device_info["index"]
+            logger.debug("Default output device: index=%s name=%s", device_index, device_info.get("name"))
         except (OSError, IOError):
             self._pyaudio.terminate()
             self._pyaudio = None
-            import logging
-            logging.getLogger(__name__).warning(
-                "No speakers detected. Audio playback disabled."
-            )
+            logger.warning("No speakers detected. Audio playback disabled.")
             return
 
         if self.config.device_index is not None:
             device_index = self.config.device_index
+            logger.debug("Using configured output device index=%s", device_index)
 
         try:
             self._stream = self._pyaudio.open(
@@ -109,13 +111,16 @@ class AudioPlayback:
                 output_device_index=device_index,
                 frames_per_buffer=self.config.chunk_size,
             )
+            logger.info(
+                "AudioPlayback stream opened: sample_rate=%s channels=%s chunk_size=%s",
+                self.config.sample_rate,
+                self.config.channels,
+                self.config.chunk_size,
+            )
         except Exception as e:
             self._pyaudio.terminate()
             self._pyaudio = None
-            import logging
-            logging.getLogger(__name__).error(
-                f"Failed to open audio output stream: {e}"
-            )
+            logger.error("AudioPlayback failed to open stream: %s", e, exc_info=True)
             return
 
         self._running.set()
@@ -125,6 +130,7 @@ class AudioPlayback:
             daemon=True,
         )
         self._thread.start()
+        logger.info("AudioPlayback started successfully")
 
     async def stop(self) -> None:
         """Stop playback and clean up resources."""
@@ -160,10 +166,7 @@ class AudioPlayback:
             sample_rate: Sample rate of the input audio.
         """
         if not self._running.is_set() or self._stream is None:
-            import logging
-            logging.getLogger(__name__).warning(
-                "AudioPlayback not started. Call start() first."
-            )
+            logger.warning("AudioPlayback not started. Call start() first.")
             return
 
         rate = sample_rate or self.config.sample_rate
@@ -179,11 +182,9 @@ class AudioPlayback:
 
         try:
             self._queue.put(data, timeout=1.0)
+            logger.debug("AudioPlayback queued %d bytes at %d Hz", len(data), rate)
         except queue.Full:
-            import logging
-            logging.getLogger(__name__).warning(
-                "Playback queue full, dropping audio chunk."
-            )
+            logger.warning("Playback queue full, dropping audio chunk.")
 
     async def play_file(self, path: Path) -> None:
         """Play an audio file (WAV, MP3, or raw PCM).
@@ -196,6 +197,7 @@ class AudioPlayback:
             raise FileNotFoundError(f"Audio file not found: {path}")
 
         suffix = path.suffix.lower()
+        logger.debug("AudioPlayback play_file: path=%s format=%s", path, suffix)
 
         if suffix == ".wav":
             audio, sample_rate = sf.read(str(path), dtype=np.float32)

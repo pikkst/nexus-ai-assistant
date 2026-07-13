@@ -37,6 +37,20 @@ ctk.set_default_color_theme("dark-blue")
 logger = logging.getLogger(__name__)
 
 
+class _SafeCTkButton(ctk.CTkButton):
+    def _on_release(self, event=None):
+        try:
+            super()._on_release(event)
+        except Exception:
+            pass
+
+    def _click_animation(self):
+        try:
+            super()._click_animation()
+        except Exception:
+            pass
+
+
 class WorkspaceLayout(Enum):
     COMPANION = "companion"
     BALANCED = "balanced"
@@ -333,6 +347,7 @@ class WorkspaceApp(ctk.CTk):
         self._tool_entries: list[ToolActivityEntry] = []
         self._evidence_entries: list[EvidenceEntry] = []
         self._muted = False
+        self._listening = False
         self._task_manager: TaskManager | None = None
         self._memory: MemoryService | None = None
         self._current_goal: Any = None
@@ -361,13 +376,15 @@ class WorkspaceApp(ctk.CTk):
         self._state_label.pack(anchor="w", padx=16, pady=(0, 16))
         self._mode_label = ctk.CTkLabel(self._sidebar, text=f"Režiim: {self._layout.value}", text_color="#888899")
         self._mode_label.pack(anchor="w", padx=16, pady=(0, 20))
-        ctk.CTkButton(self._sidebar, text="Peata kõne", command=self._interrupt).pack(fill="x", padx=16, pady=4)
-        ctk.CTkButton(self._sidebar, text="Tühista töö", command=self._cancel_work).pack(fill="x", padx=16, pady=4)
-        self._mute_btn = ctk.CTkButton(self._sidebar, text="Vaigista andurid", command=self._toggle_mute)
+        self._listen_btn = _SafeCTkButton(self._sidebar, text="Kuula", command=self._toggle_listen)
+        self._listen_btn.pack(fill="x", padx=16, pady=4)
+        _SafeCTkButton(self._sidebar, text="Peata kõne", command=self._interrupt).pack(fill="x", padx=16, pady=4)
+        _SafeCTkButton(self._sidebar, text="Tühista töö", command=self._cancel_work).pack(fill="x", padx=16, pady=4)
+        self._mute_btn = _SafeCTkButton(self._sidebar, text="Vaigista andurid", command=self._toggle_mute)
         self._mute_btn.pack(fill="x", padx=16, pady=4)
-        ctk.CTkButton(self._sidebar, text="Mälu juhtimine", command=self._open_memory).pack(fill="x", padx=16, pady=4)
-        ctk.CTkButton(self._sidebar, text="Seaded", command=self._open_settings).pack(fill="x", padx=16, pady=4)
-        ctk.CTkButton(self._sidebar, text="Välju", fg_color="#ff6b6b", command=self._quit).pack(fill="x", padx=16, pady=(20, 16))
+        _SafeCTkButton(self._sidebar, text="Mälu juhtimine", command=self._open_memory).pack(fill="x", padx=16, pady=4)
+        _SafeCTkButton(self._sidebar, text="Seaded", command=self._open_settings).pack(fill="x", padx=16, pady=4)
+        _SafeCTkButton(self._sidebar, text="Välju", fg_color="#ff6b6b", command=self._quit).pack(fill="x", padx=16, pady=(20, 16))
         self._confirm_section = ctk.CTkScrollableFrame(self._sidebar, height=200)
         self._confirm_section.pack(fill="x", padx=8, pady=(0, 8))
         ctk.CTkLabel(self._confirm_section, text="Nõusolekud", font=("Arial", 12, "bold")).pack(anchor="w", padx=8, pady=(0, 4))
@@ -429,6 +446,17 @@ class WorkspaceApp(ctk.CTk):
             self._face_panel.stop_animation()
         if state == RuntimeState.SPEAKING and self._muted:
             self.after(0, self._interrupt)
+        transcript = event.data.get("transcript") if isinstance(event.data, dict) else None
+        if isinstance(transcript, list):
+            for item in transcript:
+                role = item.get("role")
+                text = item.get("text")
+                if role == "Kasutaja":
+                    self._transcript_panel.add_user(text)
+                elif role == "Nexus":
+                    self._transcript_panel.add_assistant(text)
+                elif role == "Süsteem":
+                    self._transcript_panel.add_system(text)
 
     def set_runtime(self, runtime: Any) -> None:
         self._runtime = runtime
@@ -481,6 +509,19 @@ class WorkspaceApp(ctk.CTk):
         self._muted = not self._muted
         label = "Luba andurid" if self._muted else "Vaigista andurid"
         self._mute_btn.configure(text=label)
+
+    def _toggle_listen(self) -> None:
+        if self._runtime is None:
+            return
+        self._listening = not getattr(self, "_listening", False)
+        label = "Peata kuulamine" if self._listening else "Kuula"
+        self._listen_btn.configure(text=label)
+        if self._listening:
+            self._runtime.interrupt()
+            self._transcript_panel.add_system("Kuulamine aktiivne — räägi nüüd")
+        else:
+            self._runtime.interrupt()
+            self._transcript_panel.add_system("Kuulamine peatatud")
 
     def _open_memory(self) -> None:
         open_memory_consent()

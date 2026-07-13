@@ -1,6 +1,29 @@
 #  
 """Nexus user-interface components."""
 
+import tkinter
+import customtkinter
+
+
+def _patch_customtkinter_click_animation() -> None:
+    try:
+        from customtkinter.windows.widgets.ctk_button import CTkButton
+
+        original_on_release = CTkButton._on_release
+
+        def _safe_on_release(self, event=None):
+            try:
+                original_on_release(self, event)
+            except tkinter.TclError:
+                pass
+
+        CTkButton._on_release = _safe_on_release
+    except Exception:
+        pass
+
+
+_patch_customtkinter_click_animation()
+
 from .face import Emotion, FaceConfig, FaceState, NexusFace
 from .face_themes import FaceTheme
 from .memory_consent import MemoryConsentWindow, open_memory_consent

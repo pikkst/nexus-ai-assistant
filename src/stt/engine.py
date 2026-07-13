@@ -142,12 +142,21 @@ class STTEngine:
         Sets state to READY on success, ERROR on failure.
         """
         if self._state in (STTState.LOADING, STTState.READY, STTState.TRANSCRIBING):
+            logger.debug("STT load_model skipped; state=%s", self._state.value)
             return
 
         self._state = STTState.LOADING
+        logger.info(
+            "STT loading model_size=%s device=%s compute_type=%s language=%s",
+            self.config.model_size,
+            self.config.device,
+            self.config.compute_type,
+            self.config.language,
+        )
 
         try:
             from faster_whisper import WhisperModel  # noqa: F401
+            logger.debug("faster-whisper imported successfully")
         except ImportError as exc:
             self._state = STTState.ERROR
             err = RuntimeError(
@@ -155,6 +164,7 @@ class STTEngine:
                 "Install it with: pip install faster-whisper"
             )
             err.__cause__ = exc
+            logger.error("STT faster-whisper import failed: %s", exc)
             if self._on_error:
                 try:
                     self._on_error(err)
@@ -167,7 +177,7 @@ class STTEngine:
             compute_type = self._resolve_compute_type(device)
 
             logger.info(
-                "Loading STT model: %s on %s (%s)",
+                "STT loading model: %s on %s (%s)",
                 self.config.model_size,
                 device,
                 compute_type,
@@ -181,12 +191,12 @@ class STTEngine:
 
             self._model = model
             self._state = STTState.READY
-            logger.info("STT model loaded successfully.")
+            logger.info("STT model loaded successfully: model_size=%s device=%s", self.config.model_size, device)
 
         except Exception as exc:
             self._state = STTState.ERROR
             self._model = None
-            logger.error("Failed to load STT model: %s", exc)
+            logger.error("STT failed to load model: %s", exc, exc_info=True)
             if self._on_error:
                 try:
                     self._on_error(exc)
@@ -228,6 +238,7 @@ class STTEngine:
             )
 
         self._state = STTState.TRANSCRIBING
+        logger.debug("STT transcribing audio: samples=%d dtype=%s", len(audio), audio.dtype)
 
         partial_callback = on_partial if on_partial is not None else self._on_partial
         final_callback = on_final if on_final is not None else self._on_final
@@ -239,6 +250,7 @@ class STTEngine:
                 language=self._resolve_language(),
                 vad_filter=self.config.vad_filter,
             )
+            logger.debug("STT transcription started: beam_size=%s vad_filter=%s", self.config.beam_size, self.config.vad_filter)
 
             segment_list: list[Segment] = []
             partial_text_parts: list[str] = []
@@ -276,6 +288,15 @@ class STTEngine:
                 duration=info.duration or 0.0,
             )
 
+            logger.info(
+                "STT transcription complete: language=%s confidence=%.2f duration=%.2fs segments=%d text=%r",
+                detected_language,
+                avg_speech_probability,
+                info.duration or 0.0,
+                len(segment_list),
+                full_text[:200],
+            )
+
             if final_callback:
                 try:
                     final_callback(result)
@@ -287,7 +308,7 @@ class STTEngine:
 
         except Exception as exc:
             self._state = STTState.ERROR
-            logger.error("Transcription failed: %s", exc)
+            logger.error("STT transcription failed: %s", exc, exc_info=True)
             if self._on_error:
                 try:
                     self._on_error(exc)

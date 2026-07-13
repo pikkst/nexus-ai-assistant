@@ -8,6 +8,7 @@ Runs in a background thread to avoid blocking the async event loop.
 
 from __future__ import annotations
 
+import logging
 import queue
 import threading
 import time
@@ -17,6 +18,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from .vad import VoiceActivityDetector, VadConfig, VadState
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -91,31 +95,34 @@ class AudioCapture:
         Logs a warning and returns silently — callers should check is_active.
         """
         if self._running.is_set():
+            logger.debug("AudioCapture already running")
             return
 
         import pyaudio
+        logger.debug("Importing PyAudio for audio capture")
 
         self._pyaudio = pyaudio.PyAudio()
+        logger.debug("PyAudio initialized for capture")
 
         # Find default input device
         try:
             device_info = self._pyaudio.get_default_input_device_info()
             device_index = device_info["index"]
+            logger.debug("Default input device: index=%s name=%s", device_index, device_info.get("name"))
         except (OSError, IOError):
             device_index = None
+            logger.warning("No default input device found")
 
         if device_index is None:
             self._pyaudio.terminate()
             self._pyaudio = None
-            import logging
-            logging.getLogger(__name__).warning(
-                "No microphone detected. Audio capture disabled."
-            )
+            logger.warning("No microphone detected. Audio capture disabled.")
             return
 
         # Override with explicit device index if set
         if self.config.device_index is not None:
             device_index = self.config.device_index
+            logger.debug("Using configured input device index=%s", device_index)
 
         # Open audio stream
         try:
@@ -129,13 +136,17 @@ class AudioCapture:
                 stream_callback=self._stream_callback,
             )
             self._stream.start_stream()
+            logger.info(
+                "AudioCapture stream opened: sample_rate=%s channels=%s chunk_size=%s device_index=%s",
+                self.config.sample_rate,
+                self.config.channels,
+                self.config.chunk_size,
+                device_index,
+            )
         except Exception as e:
             self._pyaudio.terminate()
             self._pyaudio = None
-            import logging
-            logging.getLogger(__name__).error(
-                f"Failed to open audio stream: {e}"
-            )
+            logger.error("AudioCapture failed to open stream: %s", e, exc_info=True)
             return
 
         # Initialize VAD with callbacks
@@ -144,6 +155,7 @@ class AudioCapture:
             on_speech_start=self._on_vad_speech_start,
             on_speech_end=self._on_vad_speech_end,
         )
+        logger.debug("AudioCapture VAD initialized")
 
         # Start processing thread
         self._running.set()
@@ -153,6 +165,7 @@ class AudioCapture:
             daemon=True,
         )
         self._thread.start()
+        logger.info("AudioCapture started successfully")
 
     async def stop(self) -> None:
         """Stop audio capture and clean up resources."""
@@ -238,7 +251,6 @@ class AudioCapture:
             try:
                 chunk = self._chunk_queue.get(timeout=0.5)
             except queue.Empty:
-                # Check silence timeout
                 if (
                     self.config.silence_timeout > 0
                     and (time.monotonic() - silence_start) > self.config.silence_timeout
@@ -252,15 +264,15 @@ class AudioCapture:
                 break
 
             silence_start = time.monotonic()
+            rms = float(np.sqrt(np.mean(chunk ** 2)))
+            logger.debug("AudioCapture chunk: samples=%d rms=%.6f", len(chunk), rms)
 
-            # Fire audio chunk callback
             if self.on_audio_chunk:
                 try:
                     self.on_audio_chunk(chunk)
                 except Exception:
                     pass
 
-            # VAD processing
             if vad is not None:
                 state = vad.process_chunk(chunk)
                 if state == VadState.SPEECH or state == VadState.ENDING:

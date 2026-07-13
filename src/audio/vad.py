@@ -8,11 +8,15 @@ for clean utterance boundary detection.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Callable
 
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 class VadState(Enum):
@@ -103,6 +107,7 @@ class VoiceActivityDetector:
         Returns:
             Current VadState after processing this chunk.
         """
+        logger.debug("VAD process_chunk: samples=%d dtype=%s", len(chunk), chunk.dtype)
         # Convert float32 [-1,1] to int16 required by webrtcvad
         if chunk.dtype == np.float32:
             int_chunk = (chunk * 32767).astype(np.int16)
@@ -120,7 +125,9 @@ class VoiceActivityDetector:
             except Exception:
                 continue
 
-        return self._update_state(is_speech)
+        state = self._update_state(is_speech)
+        logger.debug("VAD result: is_speech=%s state=%s", is_speech, state.value)
+        return state
 
     def is_speech(self, frame: bytes) -> bool:
         """Check if a single 16-bit PCM frame contains speech.
@@ -161,6 +168,7 @@ class VoiceActivityDetector:
         if self._state == VadState.SILENCE:
             if is_speech and self._speech_frames >= self._min_speech_frames:
                 self._state = VadState.SPEECH
+                logger.debug("VAD transition: SILENCE -> SPEECH")
                 if self._on_speech_start:
                     self._on_speech_start()
 
@@ -168,14 +176,16 @@ class VoiceActivityDetector:
             if not is_speech:
                 self._state = VadState.ENDING
                 self._silence_frames = 0
+                logger.debug("VAD transition: SPEECH -> ENDING")
 
         elif self._state == VadState.ENDING:
             if is_speech:
-                # Revert to speech — user kept talking
                 self._state = VadState.SPEECH
+                logger.debug("VAD transition: ENDING -> SPEECH (resumed)")
             elif self._silence_frames >= self._silence_limit:
                 self._state = VadState.SILENCE
                 self._speech_frames = 0
+                logger.debug("VAD transition: ENDING -> SILENCE (speech ended)")
                 if self._on_speech_end:
                     self._on_speech_end()
 
