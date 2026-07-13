@@ -1200,7 +1200,7 @@ so that repeated tasks improve while I retain control over system changes.
 
 ### Task: UI-008 — Unified Companion Workspace
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 ---
 
@@ -1217,12 +1217,12 @@ so that I can understand and control the assistant without switching interfaces.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Face, transcript, runtime status, and current task are visible together
-- [ ] **AC-2:** Plan steps, tool activity, and verification evidence update live
-- [ ] **AC-3:** Permission requests are explicit and show action, scope, and risk
-- [ ] **AC-4:** User can interrupt speech, cancel work, mute sensors, and open memory controls
-- [ ] **AC-5:** Layout supports companion, balanced, and focused modes
-- [ ] **AC-6:** Accessibility and desktop-responsive smoke tests pass
+- [x] **AC-1:** Face, transcript, runtime status, and current task are visible together
+- [x] **AC-2:** Plan steps, tool activity, and verification evidence update live
+- [x] **AC-3:** Permission requests are explicit and show action, scope, and risk
+- [x] **AC-4:** User can interrupt speech, cancel work, mute sensors, and open memory controls
+- [x] **AC-5:** Layout supports companion, balanced, and focused modes
+- [x] **AC-6:** Accessibility and desktop-responsive smoke tests pass
 
 ## Definition of Done
 
@@ -1230,9 +1230,18 @@ so that I can understand and control the assistant without switching interfaces.
 - Controls remain responsive during model, audio, and tool operations
 - PR merged from `feature/unified-companion-workspace` into `develop`
 
+## Implementation
+
+- `src/ui/workspace.py` — `WorkspaceApp` unifying face, transcript, plan, tools, evidence, and controls
+- `src/ui/__init__.py` — exported workspace symbols
+- `tests/test_workspace.py` — 17 smoke tests covering panels, layout modes, runtime events, and controls
+
 ---
 
 **EST:** 8 SP
+
+**RT:** 2026-07-13
+**QA:** 2026-07-13
 
 ---
 
@@ -1342,6 +1351,7 @@ so that the assistant can match my preferred mood and desktop style.
 | PLUGIN-001 | MCP & Plugin Tool Discovery | 2026-07-13 | Integration Agent |
 | MEM-003 | Memory Consent & Management UI | 2026-07-13 | Backend Agent |
 | PERSONA-001 | Persona & Interaction Modes | 2026-07-13 | Integration Agent |
+| UI-008 | Unified Companion Workspace | 2026-07-13 | UI Agent |
 
 ---
 
