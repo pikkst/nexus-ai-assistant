@@ -25,7 +25,7 @@
 | Selectable Face Themes | ✅ Complete (UI-FACE-002) |
 | User Interface | ✅ Complete (workspace.py, 17 smoke tests) |
 | Main Pipeline | ✅ Complete (INTEGRATION-001) |
-| Packaging | 📋 Planned |
+| Packaging | ✅ Complete (OPS-001) |
 | Runtime State Machine | ✅ Complete (CORE-001) |
 | Tool Execution & Permissions | ✅ Complete (TOOLS-001) |
 | Goals & Resumable Tasks | ✅ Complete (TASKS-001) |
@@ -116,6 +116,11 @@
 | D-079 | 2026-07-13 | Response metadata is emitted in runtime events for downstream face/voice consumers | Structured metadata decouples persona from rendering while keeping expression coherent | Integration |
 | D-080 | 2026-07-13 | Unified workspace derives layout mode from persona mode | Companion/balanced/focused modes map directly to companion, balanced, and focused workspace layouts without introducing a separate UI mode | UI |
 | D-081 | 2026-07-13 | All UI updates are scheduled through Tkinter `after()` | Runtime event callbacks may fire from any thread; `after()` serializes mutations onto the Tkinter mainloop safely | UI |
+| D-082 | 2026-07-13 | setuptools_scm for versioning | Version is derived from git tags, eliminating manual version bumps in pyproject.toml | Integration |
+| D-083 | 2026-07-13 | `include = ["*"]` for setuptools package discovery | Actual runtime packages live directly under `src/` (audio, app, config, etc.), so a broad include pattern is required instead of the previous `nexus*` filter | Integration |
+| D-084 | 2026-07-13 | `nexus = "src.main:main"` console script | Provides a single documented launch command after installation | Integration |
+| D-085 | 2026-07-13 | GitHub Actions release workflow on tag push | Wheels and source distributions are built and published automatically on version tags | Integration |
+| D-086 | 2026-07-13 | Packaging smoke test workflow runs on PRs to develop | Verifies build and import success in a clean Ubuntu environment before merge | Integration |
 
 ---
 
@@ -1157,6 +1162,14 @@ Consent policies control whether sensitive memories are stored (`ask` prompts, `
 **UI-008 implementation:**
 - `src/ui/workspace.py` — `WorkspaceApp` unifying face, transcript, plan, tools, evidence, and controls into one CustomTkinter window. Layout modes (companion, balanced, focused) are derived from persona mode. Runtime state events drive face emotion, status bar, and animation. Sidebar exposes interrupt, cancel work, mute sensors, memory consent, and settings shortcuts. `ConfirmationDialog` shows action, scope, and risk before tool invocation. All UI updates are scheduled through `after()` to preserve thread safety between the runtime event loop and the Tkinter mainloop.
 - `tests/test_workspace.py` — 17 smoke tests covering panel initialization, layout mode values, emotion mapping, risk/state color coverage, interrupt/cancel/mute handlers, and runtime event propagation.
+
+**OPS-001 implementation:**
+- `pyproject.toml` — switched to `setuptools_scm` for tag-derived versioning, corrected `[tool.setuptools.packages.find]` to `include = ["*"]` so all runtime packages under `src/` are discovered, and added `[project.scripts]` with `nexus = "src.main:main"` as the CLI entry point.
+- `README.md` — added installation instructions for source and development installs plus the `nexus` launch command.
+- `.github/workflows/release.yml` — versioned release workflow that builds wheels/sdists and publishes a GitHub Release on tag push.
+- `.github/workflows/packaging-smoke.yml` — CI workflow that builds the package, installs the wheel in a clean virtualenv, and verifies the CLI entry point and core imports.
+- `scripts/smoke_test.py` — local smoke test script for validating an installed package environment.
+- `tests/test_packaging.py` — repo-level packaging tests verifying `pyproject.toml` validity, entry-point importability, and core package discovery.
 
 ---
 
