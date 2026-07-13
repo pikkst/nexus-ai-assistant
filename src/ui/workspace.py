@@ -13,23 +13,20 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 import customtkinter as ctk
 
-from src.app.contracts import MemoryService, TaskScheduler
+from src.app.contracts import MemoryService
 from src.app.events import RuntimeEvent, RuntimeState
 from src.app.face_state import face_emotion_for
 from src.config.settings import NexusConfig
-from src.persona import PersonaMode, PersonaSettings
 from src.tasks.manager import TaskManager
-from src.tools.models import RiskLevel, ToolDescriptor, ToolRequest, ToolResult
+from src.tools.models import RiskLevel
 from src.ui.face import Emotion, FaceConfig, FaceState, NexusFace
 from src.ui.memory_consent import MemoryConsentWindow, open_memory_consent
 from src.ui.settings import open_settings
