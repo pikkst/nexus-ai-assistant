@@ -54,6 +54,28 @@ from .calendar_tools import (
     UpdateEventTool,
 )
 from .calendar_factory import create_calendar_registry
+from .telegram_models import (
+    Attachment,
+    Chat,
+    ChatType,
+    Message,
+    MessageDraft,
+    MessageEntity,
+    MessageEntityType,
+    TelegramProvider,
+    TelegramUser,
+    Update,
+)
+from .telegram_tools import (
+    DraftMessageTool,
+    GetBotInfoTool,
+    GetChatTool,
+    GetUpdatesTool,
+    ListAuthorizedChatsTool,
+    SendAttachmentTool,
+    SendMessageTool,
+)
+from .telegram_factory import create_telegram_registry
 
 __all__ = [
     "AuditEntry", "InspectProjectTool", "ListDirectoryTool", "PendingToolCall",
@@ -75,4 +97,9 @@ __all__ = [
     "CreateEventDraftTool", "CreateEventTool", "DeleteEventTool", "FindConflictsTool",
     "FindFreeTimeTool", "GetEventTool", "ListCalendarsTool", "ListEventsTool",
     "UpdateEventTool", "create_calendar_registry",
+    "Attachment", "Chat", "ChatType", "Message", "MessageDraft", "MessageEntity",
+    "MessageEntityType", "TelegramUser", "Update", "TelegramProvider",
+    "GetBotInfoTool", "GetChatTool", "GetUpdatesTool", "DraftMessageTool",
+    "SendMessageTool", "SendAttachmentTool", "ListAuthorizedChatsTool",
+    "create_telegram_registry",
 ]

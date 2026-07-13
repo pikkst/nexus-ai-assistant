@@ -826,7 +826,7 @@ so that scheduling becomes faster without accidental invitations or deletions.
 
 ### Task: CONNECTOR-004 — Telegram Tools
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
 
 ---
 
@@ -1306,6 +1306,7 @@ so that the assistant can match my preferred mood and desktop style.
 | TASKS-001 | Goals, Plans & Resumable Tasks | 2026-07-13 | Integration Agent |
 | CONNECTOR-002 | Gmail Tools | 2026-07-13 | Integration Agent |
 | CONNECTOR-003 | Google Calendar Tools | 2026-07-13 | Integration Agent |
+| CONNECTOR-004 | Telegram Tools | 2026-07-13 | Integration Agent |
 
 ---
 
