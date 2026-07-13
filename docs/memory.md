@@ -23,7 +23,7 @@
 | Memory Store | ✅ Complete (structured types, provenance, manager, retention, 16 tests) |
 | Animated Face UI | ✅ Complete (face.py, face_server.py, demo HTMLs) |
 | Selectable Face Themes | ✅ Complete (UI-FACE-002) |
-| User Interface | 📋 Planned |
+| User Interface | ✅ Complete (workspace.py, 17 smoke tests) |
 | Main Pipeline | ✅ Complete (INTEGRATION-001) |
 | Packaging | 📋 Planned |
 | Runtime State Machine | ✅ Complete (CORE-001) |
@@ -114,6 +114,8 @@
 | D-077 | 2026-07-13 | Persona mode affects system-prompt tone and detail, never factual or permission standards | Playfulness is bounded by explicit factual-accuracy instruction in every persona prompt | Integration |
 | D-078 | 2026-07-13 | Proactive suggestions are rate-limited and disabled during quiet hours | Users control interruption through explicit settings rather than hidden heuristics | Integration |
 | D-079 | 2026-07-13 | Response metadata is emitted in runtime events for downstream face/voice consumers | Structured metadata decouples persona from rendering while keeping expression coherent | Integration |
+| D-080 | 2026-07-13 | Unified workspace derives layout mode from persona mode | Companion/balanced/focused modes map directly to companion, balanced, and focused workspace layouts without introducing a separate UI mode | UI |
+| D-081 | 2026-07-13 | All UI updates are scheduled through Tkinter `after()` | Runtime event callbacks may fire from any thread; `after()` serializes mutations onto the Tkinter mainloop safely | UI |
 
 ---
 
@@ -1149,6 +1151,12 @@ class DevReportGenerator:
 ---
 
 Consent policies control whether sensitive memories are stored (`ask` prompts, `allow` stores unconditionally, `never_store` blocks). Every mutation appends a redacted `MemoryAuditRecord` to the in-memory audit log. The UI exposes search, filter, edit, delete, pin, export, and bulk-clear operations.
+
+---
+
+**UI-008 implementation:**
+- `src/ui/workspace.py` — `WorkspaceApp` unifying face, transcript, plan, tools, evidence, and controls into one CustomTkinter window. Layout modes (companion, balanced, focused) are derived from persona mode. Runtime state events drive face emotion, status bar, and animation. Sidebar exposes interrupt, cancel work, mute sensors, memory consent, and settings shortcuts. `ConfirmationDialog` shows action, scope, and risk before tool invocation. All UI updates are scheduled through `after()` to preserve thread safety between the runtime event loop and the Tkinter mainloop.
+- `tests/test_workspace.py` — 17 smoke tests covering panel initialization, layout mode values, emotion mapping, risk/state color coverage, interrupt/cancel/mute handlers, and runtime event propagation.
 
 ---
 
