@@ -35,6 +35,7 @@
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
 | Persona & Interaction Modes | ✅ Complete (PERSONA-001) |
 | Verification & Safe Learning | ✅ Complete (EVAL-001) |
+| Safe Reflection & Learning Loop | ✅ Complete (LEARN-001) |
 | Google Calendar Tools | ✅ Complete (CONNECTOR-003) |
 | Telegram Tools | ✅ Complete (CONNECTOR-004) |
 | LinkedIn Tools | ✅ Complete (CONNECTOR-005) |
@@ -828,6 +829,7 @@ duplicate events after retry or resumed tasks.
 | MEM-003 | Memory Consent & Management UI | 2026-07-13 | Backend Agent |
 | PERSONA-001 | Persona & Interaction Modes | 2026-07-13 | Integration Agent |
 | EVAL-001 | Result Verification & Feedback | 2026-07-13 | Integration Agent |
+| LEARN-001 | Safe Reflection & Learning Loop | 2026-07-13 | Integration Agent |
 
 ---
 
@@ -1050,6 +1052,102 @@ def apply_persona(base_prompt: str, *, mode: str = "balanced", playfulness: floa
 Standalone helper for persona-aware prompt construction without requiring a full `PersonaManager` instance.
 
 ---
+
+### Learning Loop API
+
+```python
+# src/learn/models.py
+class LessonStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    QUARANTINED = "quarantined"
+    REJECTED = "rejected"
+    APPLIED = "applied"
+
+class ImprovementTarget(str, Enum):
+    CODE = "code"
+    PROMPT = "prompt"
+    PERMISSION = "permission"
+    SAFETY_RULE = "safety_rule"
+    TOOL = "tool"
+    MEMORY = "memory"
+
+@dataclass(frozen=True, slots=True)
+class Lesson:
+    id: str
+    text: str
+    scope: str
+    confidence: float
+    provenance: tuple[str, ...]
+    expected_benefit: str
+    status: LessonStatus = LessonStatus.PENDING
+    created_at: datetime
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+@dataclass(frozen=True, slots=True)
+class ImprovementProposal:
+    id: str
+    lesson_id: str
+    target: ImprovementTarget
+    description: str
+    proposed_change: str
+    rationale: str
+    requires_approval: bool = True
+    status: str = "pending"
+    created_at: datetime
+
+@dataclass(frozen=True, slots=True)
+class QuarantineRecord:
+    id: str
+    lesson_id: str
+    reason: str
+    conflicting_lesson_ids: tuple[str, ...] = ()
+    created_at: datetime
+
+@dataclass(frozen=True, slots=True)
+class DevReport:
+    generated_at: str
+    total_evaluations: int
+    successful_verifications: int
+    failed_verifications: int
+    lessons_generated: int
+    lessons_approved: int
+    lessons_quarantined: int
+    proposals_pending: int
+    summary: str = ""
+```
+
+```python
+# src/learn/reflection.py
+class ReflectionEngine:
+    def __init__(self, memory_manager, lesson_store, quarantine: QuarantineManager | None = None) -> None: ...
+    def reflect(self, eval_records: list[EvaluationRecord], goals: list[Goal]) -> tuple[list[Lesson], list[ImprovementProposal]]: ...
+
+# src/learn/quarantine.py
+class QuarantineManager:
+    def evaluate(self, lesson: Lesson, existing_lessons: list[Lesson]) -> QuarantineRecord | None: ...
+    def release(self, lesson_id: str) -> None: ...
+    def is_quarantined(self, lesson_id: str) -> bool: ...
+
+# src/learn/store.py
+class LessonStore:
+    def add_lesson(self, lesson: Lesson) -> None: ...
+    def add_proposal(self, proposal: ImprovementProposal) -> None: ...
+    def add_quarantine(self, record: QuarantineRecord) -> None: ...
+    def load_lessons(self) -> list[Lesson]: ...
+    def load_proposals(self) -> list[ImprovementProposal]: ...
+    def load_quarantine(self) -> list[QuarantineRecord]: ...
+
+# src/learn/report.py
+class DevReportGenerator:
+    def __init__(self, lesson_store: LessonStore, eval_metrics: EvalMetrics | None = None) -> None: ...
+    def generate(self) -> DevReport: ...
+```
+
+`ReflectionEngine.reflect` consumes `EvaluationRecord` instances and `Goal` data to produce lessons. Confidence is derived from verification confidence merged with feedback rating. `QuarantineManager` quarantines lessons with confidence below 0.5 or with text conflicts against existing approved lessons. `ImprovementProposal` instances infer a target type from lesson text but are never applied automatically; all changes to code, prompts, permissions, and safety rules require explicit user approval. `DevReportGenerator` produces a local summary from evaluation metrics, lesson counts, and pending proposals. Configuration key `learning_path` defaults to `~/.nexus/learning`.
+
+---
+
 Consent policies control whether sensitive memories are stored (`ask` prompts, `allow` stores unconditionally, `never_store` blocks). Every mutation appends a redacted `MemoryAuditRecord` to the in-memory audit log. The UI exposes search, filter, edit, delete, pin, export, and bulk-clear operations.
 
 ---

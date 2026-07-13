@@ -1148,7 +1148,9 @@ so that the assistant is dependable rather than merely convincing.
 
 ### Task: LEARN-001 — Safe Reflection & Learning Loop
 
-**Status:** 📋 BACKLOG
+**Status:** ✅ DONE
+
+**EST:** 8 SP | **RT:** 2026-07-13 | **QA:** 2026-07-13
 
 ---
 
@@ -1166,18 +1168,29 @@ so that repeated tasks improve while I retain control over system changes.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1:** Reflection consumes task evidence and user feedback rather than model opinion alone
-- [ ] **AC-2:** Lessons include scope, confidence, provenance, and measurable expected benefit
-- [ ] **AC-3:** Lessons are stored as reviewable procedural memory
-- [ ] **AC-4:** Conflicting or low-confidence lessons are quarantined for review
-- [ ] **AC-5:** Code, prompts, permissions, and safety rules require explicit user approval to change
-- [ ] **AC-6:** A local development report summarizes outcomes and proposed improvements
+- [x] **AC-1:** Reflection consumes task evidence and user feedback rather than model opinion alone
+- [x] **AC-2:** Lessons include scope, confidence, provenance, and measurable expected benefit
+- [x] **AC-3:** Lessons are stored as reviewable procedural memory
+- [x] **AC-4:** Conflicting or low-confidence lessons are quarantined for review
+- [x] **AC-5:** Code, prompts, permissions, and safety rules require explicit user approval to change
+- [x] **AC-6:** A local development report summarizes outcomes and proposed improvements
 
 ## Definition of Done
 
 - A repeated mocked task can reuse an approved lesson
 - No protected system artifact is modified without confirmation
 - PR merged from `feature/safe-learning-loop` into `develop`
+
+## Implementation
+
+- `src/learn/models.py` — `Lesson`, `ImprovementProposal`, `QuarantineRecord`, `DevReport`, `LessonStatus`, `ImprovementTarget`
+- `src/learn/store.py` — `LessonStore` with atomic JSONL persistence for lessons, proposals, and quarantine records
+- `src/learn/quarantine.py` — `QuarantineManager` quarantines lessons with confidence < 0.5 or text conflicts against existing approved lessons
+- `src/learn/reflection.py` — `ReflectionEngine` consumes `EvaluationRecord` and `Goal` data to produce lessons and proposals; confidence merges verification confidence with feedback rating
+- `src/learn/report.py` — `DevReportGenerator` summarizes evaluations, lessons, quarantine, and pending proposals
+- `src/learn/factory.py` — `create_learning_layer` helper wires store, engine, and quarantine together
+- `tests/test_learn.py` — 20 tests covering store persistence, quarantine logic, reflection, proposals, and report generation
+- `src/config/settings.py` — added `learning_path` configuration
 
 ---
 
