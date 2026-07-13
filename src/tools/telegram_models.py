@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -13,14 +14,12 @@ _VALID_CHAT_ID = r"^-?\d+$"
 
 
 def _validate_username(value: str, field_name: str) -> None:
-    import re
-    if not re.match(_VALID_USERNAME, value):
+    if not isinstance(value, str) or not re.match(_VALID_USERNAME, value):
         raise ValueError(f"{field_name} must be a valid Telegram username (5-32 chars, alphanumeric and underscores)")
 
 
 def _validate_chat_id(value: str, field_name: str) -> None:
-    import re
-    if not re.match(_VALID_CHAT_ID, value):
+    if not isinstance(value, str) or not re.match(_VALID_CHAT_ID, value):
         raise ValueError(f"{field_name} must be a valid Telegram chat id (integer string)")
 
 
@@ -59,8 +58,6 @@ class TelegramUser:
     def __post_init__(self) -> None:
         if self.id <= 0:
             raise ValueError("user id must be a positive integer")
-        if not self.is_bot:
-            raise ValueError("this module models bot identity; use a bot user")
         if not self.first_name:
             raise ValueError("first_name is required")
         if self.username:

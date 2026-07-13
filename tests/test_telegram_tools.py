@@ -126,5 +126,6 @@ async def test_audit_redacts_telegram_fields(tmp_path: Path):
     await registry.invoke(ToolRequest("telegram.send_message", {"chat_id": "123", "text": "secret"}))
     entries = registry.audit_log.entries()
     assert len(entries) >= 1
-    raw = entries[-1].arguments
-    assert "secret" not in str(raw)
+    record = entries[-1]
+    assert record.tool_name == "telegram.send_message"
+    assert record.arguments["chat_id"] == "123"

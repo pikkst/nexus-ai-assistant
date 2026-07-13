@@ -16,7 +16,6 @@ from .telegram_tools import (
 )
 from .telegram_models import TelegramProvider
 from .telegram_provider import MockTelegramProvider
-from .models import RiskLevel
 from .permissions import PermissionPolicy
 from .registry import ToolRegistry
 

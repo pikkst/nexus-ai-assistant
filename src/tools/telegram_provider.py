@@ -31,7 +31,6 @@ class MockTelegramProvider:
         self._updates: list[Update] = []
         self._update_offset = 0
         self._counter = 0
-        self._authorized_chat_ids: set[str] = set()
 
     def _next_id(self, prefix: str) -> str:
         self._counter += 1
@@ -48,7 +47,6 @@ class MockTelegramProvider:
         else:
             existing = self._chats[chat_id]
             object.__setattr__(existing, "is_authorized", True)
-        self._authorized_chat_ids.add(chat_id)
         return self._chats[chat_id]
 
     def add_update(self, message: Message) -> Update:

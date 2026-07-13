@@ -130,6 +130,9 @@ class GetUpdatesTool:
         self.provider = provider
 
     def validate(self, arguments: dict[str, Any]) -> None:
+        offset = arguments.get("offset")
+        if offset is not None and not isinstance(offset, int):
+            raise ToolValidationError("offset must be an integer or null")
         limit = arguments.get("limit", 100)
         _validate_limit(limit, "limit")
 
@@ -151,9 +154,8 @@ class DraftMessageTool:
         _validate_chat_id(arguments.get("chat_id"), "chat_id")
         text = arguments.get("text")
         caption = arguments.get("caption")
-        attachment = arguments.get("attachment")
-        if not text and not caption and not attachment:
-            raise ToolValidationError("draft must have text, caption, or attachment")
+        if not text and not caption:
+            raise ToolValidationError("draft must have text or caption")
 
     async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
         draft = MessageDraft(
