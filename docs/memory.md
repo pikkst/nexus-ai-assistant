@@ -33,7 +33,7 @@
 | LLM Tool Selection & Calling | 🔀 Draft PR #18 (TOOLS-002) |
 | Local Development Toolset | ⏳ In Progress (TOOLS-003) |
 | Structured Memory & Consent | 📋 Planned (MEM-002, MEM-003) |
-| Persona & Interaction Modes | 📋 Planned (PERSONA-001) |
+| Persona & Interaction Modes | ✅ Complete (PERSONA-001) |
 | Verification & Safe Learning | 📋 Planned (EVAL-001, LEARN-001) |
 | Google Calendar Tools | ✅ Complete (CONNECTOR-003) |
 | Telegram Tools | ✅ Complete (CONNECTOR-004) |
@@ -109,7 +109,10 @@
 | D-073 | 2026-07-13 | Only explicitly installed and enabled providers are loaded | Disabling or removing a provider immediately removes its tools without affecting core tools | Integration |
 | D-074 | 2026-07-13 | Plugin tools cannot bypass registry risk policy, timeout, cancellation, or audit | All plugin tool invocations pass through the same ToolRegistry and audit log | Security |
 | D-075 | 2026-07-13 | Version conflicts, unavailable servers, duplicate names, and malformed schemas fail safely | Broken or conflicting plugins are skipped or rejected without corrupting the registry | Integration |
-| D-057 | 2026-07-13 | Agent loops pause on confirmation and enforce call, repetition, timeout, and parallel-call guards | Human control and bounded execution take priority over autonomous continuation | Integration |
+| D-076 | 2026-07-13 | Persona settings are persisted in NexusConfig and a dedicated persona.json | Settings survive restarts and UI changes are immediate | Integration |
+| D-077 | 2026-07-13 | Persona mode affects system-prompt tone and detail, never factual or permission standards | Playfulness is bounded by explicit factual-accuracy instruction in every persona prompt | Integration |
+| D-078 | 2026-07-13 | Proactive suggestions are rate-limited and disabled during quiet hours | Users control interruption through explicit settings rather than hidden heuristics | Integration |
+| D-079 | 2026-07-13 | Response metadata is emitted in runtime events for downstream face/voice consumers | Structured metadata decouples persona from rendering while keeping expression coherent | Integration |
 
 ---
 
@@ -271,6 +274,17 @@ no live network access is required.
 - `src/ui/__init__.py` — exported `MemoryConsentWindow` and `open_memory_consent`
 - `src/app/contracts.py` — extended `MemoryService` protocol with delete, update, pin, export, clear, and audit-log operations
 - `tests/test_memory_consent.py` — 26 tests covering store mutations, audit, export/clear, consent policies, manager filters, self-summary, and UI module import
+
+**PERSONA-001 implementation:**
+- `src/persona/models.py` — `PersonaMode` (companion, balanced, focused), `PersonaSettings` (mode, playfulness, proactivity, response_detail, unsolicited_suggestions, quiet_hours), and `PersonaResponseMetadata` (emotion, voice_energy, confidence, detail_level, should_suggest)
+- `src/persona/settings.py` — `PersonaManager` with settings mutation, quiet-hours detection, proactive rate-limiting, persona-aware prompt application, and JSON persistence to `~/.nexus/persona.json`
+- `src/persona/__init__.py` — exported persona module symbols
+- `src/config/settings.py` — persisted persona_mode, persona_playfulness, persona_proactivity, persona_response_detail, persona_unsolicited_suggestions, persona_quiet_hours_start, persona_quiet_hours_end
+- `src/llm/prompts.py` — `apply_persona` standalone helper that injects mode, tone, and detail guidance into system prompts while preserving factual-accuracy requirements
+- `src/app/runtime.py` — `NexusRuntime` accepts optional `PersonaManager`, applies persona to LLM system prompt on every text request, emits persona metadata in completion events, and exposes `get_persona_metadata`
+- `src/app/factory.py` — constructs `PersonaManager` from `NexusConfig` persona fields and injects it into `NexusRuntime`
+- `src/ui/settings.py` — persona section in settings window (mode dropdown, playfulness/proactivity/detail sliders, unsolicited suggestions toggle, quiet-hours start/end entries)
+- `tests/test_persona.py` — 27 tests covering settings validation, mode behavior, metadata bounds, quiet hours, proactive rate-limiting, prompt integration, config roundtrip, and persistence
 
 **Key decisions:**
 - Store lightweight conversation memory as human-readable JSON without requiring an embedding model
@@ -796,6 +810,7 @@ duplicate events after retry or resumed tasks.
 | CONNECTOR-005 | LinkedIn Assisted Workflow | 2026-07-13 | Integration Agent |
 | MEM-002 | Structured Multi-Layer Memory | 2026-07-13 | Backend Agent |
 | MEM-003 | Memory Consent & Management UI | 2026-07-13 | Backend Agent |
+| PERSONA-001 | Persona & Interaction Modes | 2026-07-13 | Integration Agent |
 
 ---
 
@@ -947,6 +962,77 @@ class NexusConfig:
     memory_pinned_ids: list[str] = field(default_factory=list)
 ```
 
+---
+
+### Persona & Interaction Modes API
+
+```python
+# src/persona/models.py
+class PersonaMode(str, Enum):
+    COMPANION = "companion"
+    BALANCED = "balanced"
+    FOCUSED = "focused"
+
+@dataclass(frozen=True, slots=True)
+class PersonaSettings:
+    mode: PersonaMode = PersonaMode.BALANCED
+    playfulness: float = 0.5
+    proactivity: float = 0.5
+    response_detail: float = 0.5
+    unsolicited_suggestions: bool = True
+    quiet_hours_start: time | None = None
+    quiet_hours_end: time | None = None
+
+@dataclass(frozen=True, slots=True)
+class PersonaResponseMetadata:
+    emotion: str = "neutral"
+    voice_energy: float = 0.5
+    confidence: float = 0.8
+    detail_level: str = "normal"
+    should_suggest: bool = False
+    metadata: dict[str, Any] = field(default_factory=dict)
+```
+
+```python
+# src/persona/settings.py
+class PersonaManager:
+    def __init__(self, settings: PersonaSettings | None = None, path: Path | None = None): ...
+    def update(self, **kwargs: Any) -> PersonaSettings: ...
+    def set_mode(self, mode: PersonaMode | str) -> PersonaSettings: ...
+    def is_quiet_hours(self, *, now: datetime | None = None) -> bool: ...
+    def can_send_proactive(self, *, now: datetime | None = None) -> bool: ...
+    def mark_proactive_sent(self, *, now: datetime | None = None) -> None: ...
+    def response_metadata(self, confidence: float = 0.8) -> PersonaResponseMetadata: ...
+    def apply_persona(self, base_prompt: str) -> str: ...
+    def save(self, path: Path | str | None = None) -> None: ...
+    @classmethod
+    def load(cls, path: Path | str | None = None) -> PersonaManager: ...
+```
+
+Settings persist to `~/.nexus/persona.json`. Quiet hours use `time.fromisoformat` strings. Proactive rate-limiting uses a minimum interval derived from proactivity. `apply_persona` injects mode-specific tone and detail guidance while preserving factual-accuracy and permission standards.
+
+```python
+# src/config/settings.py
+class NexusConfig:
+    persona_mode: str = "balanced"
+    persona_playfulness: float = 0.5
+    persona_proactivity: float = 0.5
+    persona_response_detail: float = 0.5
+    persona_unsolicited_suggestions: bool = True
+    persona_quiet_hours_start: str | None = None
+    persona_quiet_hours_end: str | None = None
+```
+
+Quiet hours are stored as ISO-format `HH:MM:SS` strings in `NexusConfig` and converted to `time` objects for `PersonaManager`.
+
+```python
+# src/llm/prompts.py
+def apply_persona(base_prompt: str, *, mode: str = "balanced", playfulness: float = 0.5, response_detail: float = 0.5) -> str: ...
+```
+
+Standalone helper for persona-aware prompt construction without requiring a full `PersonaManager` instance.
+
+---
 Consent policies control whether sensitive memories are stored (`ask` prompts, `allow` stores unconditionally, `never_store` blocks). Every mutation appends a redacted `MemoryAuditRecord` to the in-memory audit log. The UI exposes search, filter, edit, delete, pin, export, and bulk-clear operations.
 
 ---

@@ -6,11 +6,13 @@ CustomTkinter-based settings window for audio, TTS, language, and more.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Callable
 
 import customtkinter as ctk
 
 from src.config.settings import NexusConfig
+from src.persona import PersonaMode, PersonaSettings
 
 
 ctk.set_appearance_mode("dark")
@@ -51,6 +53,13 @@ def _list_pyaudio_devices() -> tuple[list[str], list[str]]:
     return input_devices, output_devices
 
 
+PERSONA_MODES = [
+    ("Kaaslane", PersonaMode.COMPANION.value),
+    ("Tasakaalus", PersonaMode.BALANCED.value),
+    ("Fookuses", PersonaMode.FOCUSED.value),
+]
+
+
 class SettingsWindow(ctk.CTk):
     """Settings panel window."""
 
@@ -61,6 +70,23 @@ class SettingsWindow(ctk.CTk):
     ) -> None:
         super().__init__()
         self.config = config or NexusConfig.load()
+        self._persona = PersonaSettings(
+            mode=PersonaMode(self.config.persona_mode),
+            playfulness=self.config.persona_playfulness,
+            proactivity=self.config.persona_proactivity,
+            response_detail=self.config.persona_response_detail,
+            unsolicited_suggestions=self.config.persona_unsolicited_suggestions,
+            quiet_hours_start=(
+                datetime.fromisoformat(self.config.persona_quiet_hours_start).time()
+                if self.config.persona_quiet_hours_start
+                else None
+            ),
+            quiet_hours_end=(
+                datetime.fromisoformat(self.config.persona_quiet_hours_end).time()
+                if self.config.persona_quiet_hours_end
+                else None
+            ),
+        )
         self._on_save = on_save
         self.title("Nexus — Seaded")
         self.geometry("560x720")
@@ -177,6 +203,77 @@ class SettingsWindow(ctk.CTk):
         self._face_theme_menu.set(self.config.face_theme)
         self._face_theme_menu.pack(fill="x", pady=(0, 12))
 
+        ctk.CTkLabel(container, text="Persona", font=("Arial", 18, "bold")).pack(
+            anchor="w", pady=(12, 8)
+        )
+
+        ctk.CTkLabel(container, text="Suhtlusrežiim:").pack(anchor="w")
+        self._persona_mode_menu = ctk.CTkOptionMenu(
+            container,
+            values=[label for label, _ in PERSONA_MODES],
+            command=self._on_persona_mode_change,
+        )
+        current_mode = next(
+            (label for label, code in PERSONA_MODES if code == self.config.persona_mode),
+            PERSONA_MODES[1][0],
+        )
+        self._persona_mode_menu.set(current_mode)
+        self._persona_mode_menu.pack(fill="x", pady=(0, 12))
+
+        self._playfulness_label = ctk.CTkLabel(
+            container, text=f"Mängulikkus: {int(self.config.persona_playfulness * 100)}%"
+        )
+        self._playfulness_label.pack(anchor="w")
+        self._playfulness_slider = ctk.CTkSlider(
+            container, from_=0.0, to=1.0, number_of_steps=100,
+            command=lambda v: self._on_playfulness_change(float(v)),
+        )
+        self._playfulness_slider.set(self.config.persona_playfulness)
+        self._playfulness_slider.pack(fill="x", pady=(0, 12))
+
+        self._proactivity_label = ctk.CTkLabel(
+            container, text=f"Proaktiivsus: {int(self.config.persona_proactivity * 100)}%"
+        )
+        self._proactivity_label.pack(anchor="w")
+        self._proactivity_slider = ctk.CTkSlider(
+            container, from_=0.0, to=1.0, number_of_steps=100,
+            command=lambda v: self._on_proactivity_change(float(v)),
+        )
+        self._proactivity_slider.set(self.config.persona_proactivity)
+        self._proactivity_slider.pack(fill="x", pady=(0, 12))
+
+        self._detail_label = ctk.CTkLabel(
+            container, text=f"Detailitus: {int(self.config.persona_response_detail * 100)}%"
+        )
+        self._detail_label.pack(anchor="w")
+        self._detail_slider = ctk.CTkSlider(
+            container, from_=0.0, to=1.0, number_of_steps=100,
+            command=lambda v: self._on_detail_change(float(v)),
+        )
+        self._detail_slider.set(self.config.persona_response_detail)
+        self._detail_slider.pack(fill="x", pady=(0, 12))
+
+        self._suggestions_switch = ctk.CTkSwitch(
+            container,
+            text="Soovitused ilma küsimata",
+            command=self._on_suggestions_toggle,
+        )
+        if self.config.persona_unsolicited_suggestions:
+            self._suggestions_switch.select()
+        self._suggestions_switch.pack(fill="x", pady=(0, 12))
+
+        ctk.CTkLabel(container, text="Vaikeseadete aeg:").pack(anchor="w")
+        quiet_frame = ctk.CTkFrame(container)
+        quiet_frame.pack(fill="x", pady=(0, 12))
+        self._quiet_start_entry = ctk.CTkEntry(quiet_frame, placeholder_text="Algus (HH:MM)")
+        self._quiet_start_entry.pack(side="left", fill="x", expand=True, padx=(0, 4))
+        self._quiet_end_entry = ctk.CTkEntry(quiet_frame, placeholder_text="Lõpp (HH:MM)")
+        self._quiet_end_entry.pack(side="left", fill="x", expand=True, padx=(4, 0))
+        if self._persona.quiet_hours_start:
+            self._quiet_start_entry.insert(0, self._persona.quiet_hours_start.strftime("%H:%M"))
+        if self._persona.quiet_hours_end:
+            self._quiet_end_entry.insert(0, self._persona.quiet_hours_end.strftime("%H:%M"))
+
         # Save button
         ctk.CTkButton(container, text="Salvesta seaded", command=self._save).pack(
             fill="x", pady=(16, 0)
@@ -206,11 +303,47 @@ class SettingsWindow(ctk.CTk):
         else:
             self.config.speaker_device_index = self._output_devices.index(value) - 1
 
+    def _on_persona_mode_change(self, label: str) -> None:
+        code = next(code for lbl, code in PERSONA_MODES if lbl == label)
+        self.config.persona_mode = code
+
+    def _on_playfulness_change(self, value: float) -> None:
+        self.config.persona_playfulness = value
+        self._playfulness_label.configure(text=f"Mängulikkus: {int(value * 100)}%")
+
+    def _on_proactivity_change(self, value: float) -> None:
+        self.config.persona_proactivity = value
+        self._proactivity_label.configure(text=f"Proaktiivsus: {int(value * 100)}%")
+
+    def _on_detail_change(self, value: float) -> None:
+        self.config.persona_response_detail = value
+        self._detail_label.configure(text=f"Detailitus: {int(value * 100)}%")
+
+    def _on_suggestions_toggle(self) -> None:
+        self.config.persona_unsolicited_suggestions = bool(self._suggestions_switch.get())
+
     def _save(self) -> None:
+        self._apply_quiet_hours()
         self.config.save()
         if self._on_save:
             self._on_save(self.config)
         self.destroy()
+
+    def _apply_quiet_hours(self) -> None:
+        start_text = self._quiet_start_entry.get().strip()
+        end_text = self._quiet_end_entry.get().strip()
+        try:
+            self.config.persona_quiet_hours_start = (
+                time.fromisoformat(start_text).isoformat() if start_text else None
+            )
+        except ValueError:
+            self.config.persona_quiet_hours_start = None
+        try:
+            self.config.persona_quiet_hours_end = (
+                time.fromisoformat(end_text).isoformat() if end_text else None
+            )
+        except ValueError:
+            self.config.persona_quiet_hours_end = None
 
 
 def open_settings(on_save: Callable[[NexusConfig], None] | None = None) -> SettingsWindow:

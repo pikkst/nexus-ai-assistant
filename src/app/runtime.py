@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 import numpy as np
 
@@ -20,6 +20,7 @@ from .contracts import (
 from .events import RuntimeEvent, RuntimeState
 from .lifecycle import start_optional, stop_optional
 from .state_machine import RuntimeStateMachine
+from src.persona import PersonaManager, PersonaResponseMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +38,16 @@ class RuntimeServices:
 class NexusRuntime:
     """Coordinate text, speech, memory, model, and playback services."""
 
-    def __init__(self, services: RuntimeServices, *, system_prompt: str) -> None:
+    def __init__(
+        self,
+        services: RuntimeServices,
+        *,
+        system_prompt: str,
+        persona: PersonaManager | None = None,
+    ) -> None:
         self.services = services
         self.system_prompt = system_prompt
+        self.persona = persona or PersonaManager()
         self.state_machine = RuntimeStateMachine()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._started = False
@@ -89,8 +97,9 @@ class NexusRuntime:
         self._emit(RuntimeState.PLANNING, "Generating response", {"input": prompt})
         try:
             context = self._memory_context(prompt)
+            persona_prompt = self.persona.apply_persona(self.system_prompt + context)
             response = await self.services.llm.generate(
-                prompt, system_prompt=self.system_prompt + context
+                prompt, system_prompt=persona_prompt
             )
             answer = str(response.content).strip()
             if not answer:
@@ -98,7 +107,8 @@ class NexusRuntime:
             self._emit(RuntimeState.VERIFYING, "Response validated")
             self._remember(prompt, answer)
             await self._speak(answer)
-            self._emit(RuntimeState.IDLE, "Response complete", {"response": answer})
+            metadata = self.persona.response_metadata(confidence=0.9)
+            self._emit(RuntimeState.IDLE, "Response complete", {"response": answer, "persona": asdict(metadata)})
             return answer
         except Exception as exc:
             logger.exception("Nexus request failed")
@@ -143,5 +153,8 @@ class NexusRuntime:
         except Exception as exc:
             logger.exception("Captured speech processing failed")
             self._emit(RuntimeState.ERROR, str(exc))
+    def get_persona_metadata(self, confidence: float = 0.8) -> PersonaResponseMetadata:
+        return self.persona.response_metadata(confidence=confidence)
+
     def _emit(self, state: RuntimeState, message: str, data: dict[str, object] | None = None) -> None:
         self.state_machine.transition(state, message, data)

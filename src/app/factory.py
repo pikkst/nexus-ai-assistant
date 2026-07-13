@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from src.audio import AudioCapture, AudioCaptureConfig, AudioPlayback, AudioPlaybackConfig
 from src.config import NexusConfig
 from src.llm import LLMClient, LLMConfig
 from src.memory import MemoryStore
+from src.persona import PersonaManager, PersonaMode, PersonaSettings
 from src.stt import STTConfig, STTEngine
 from src.tts import TTSConfig, TTSEngine
 
@@ -61,6 +63,25 @@ def create_runtime(config: NexusConfig | None = None) -> NexusRuntime:
                 model_dir=Path("~/.nexus/voices"),
             )
         )
+    persona = PersonaManager(
+        PersonaSettings(
+            mode=PersonaMode(settings.persona_mode),
+            playfulness=settings.persona_playfulness,
+            proactivity=settings.persona_proactivity,
+            response_detail=settings.persona_response_detail,
+            unsolicited_suggestions=settings.persona_unsolicited_suggestions,
+            quiet_hours_start=(
+                time.fromisoformat(settings.persona_quiet_hours_start)
+                if settings.persona_quiet_hours_start
+                else None
+            ),
+            quiet_hours_end=(
+                time.fromisoformat(settings.persona_quiet_hours_end)
+                if settings.persona_quiet_hours_end
+                else None
+            ),
+        )
+    )
     return NexusRuntime(
         RuntimeServices(
             llm=llm,
@@ -71,4 +92,5 @@ def create_runtime(config: NexusConfig | None = None) -> NexusRuntime:
             tts=tts,
         ),
         system_prompt=settings.llm_system_prompt,
+        persona=persona,
     )

@@ -67,6 +67,15 @@ class NexusConfig:
     face_theme: str = "classic"
     language: str = "et"
 
+    # Persona
+    persona_mode: str = "balanced"
+    persona_playfulness: float = 0.5
+    persona_proactivity: float = 0.5
+    persona_response_detail: float = 0.5
+    persona_unsolicited_suggestions: bool = True
+    persona_quiet_hours_start: str | None = None
+    persona_quiet_hours_end: str | None = None
+
     # Plugins
     plugins_dir: str = str(Path("~/.nexus/plugins").expanduser())
     enable_plugins: bool = True
