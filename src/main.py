@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 
 from src.app import RuntimeEvent, create_runtime
 
@@ -33,6 +34,10 @@ async def run() -> None:
 
 def main() -> None:
     """Configure logging and start Nexus."""
+    if len(sys.argv) > 1 and sys.argv[1] in {"--help", "-h"}:
+        print("Usage: nexus")
+        print("Launch the Nexus local AI assistant runtime.")
+        return
     logging.basicConfig(level=logging.INFO)
     try:
         asyncio.run(run())
