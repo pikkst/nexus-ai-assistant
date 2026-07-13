@@ -90,7 +90,7 @@ async def test_missing_model_reports_clear_error() -> None:
     )
 
     with patch.dict(sys.modules, install_fake_piper(loader)):
-        with pytest.raises(TTSModelError, match="model file not found"):
+        with pytest.raises(TTSModelError, match="No usable TTS voice"):
             await engine.load_model()
 
     loader.assert_not_called()

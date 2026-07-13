@@ -63,69 +63,101 @@ class NexusRuntime:
     async def start(self) -> None:
         """Start configured services, degrading gracefully when optional ones fail."""
         if self._started:
+            logger.debug("NexusRuntime already started")
             return
         self._loop = asyncio.get_running_loop()
+        logger.info("NexusRuntime starting services...")
         await start_optional("playback", self.services.playback, "start")
         stt_ready = await start_optional("STT", self.services.stt, "load_model")
         tts_ready = await start_optional("TTS", self.services.tts, "load_model")
         if not stt_ready:
+            logger.warning("STT service failed to start; disabling audio input")
             self.services.stt = None
         if not tts_ready:
+            logger.warning("TTS service failed to start; disabling audio output")
             self.services.tts = None
         if self.services.capture and self.services.stt:
             self.services.capture.on_speech_start = self._on_speech_start
             self.services.capture.on_speech_end = self._on_speech_end
             await start_optional("audio capture", self.services.capture, "start")
         self._started = True
+        logger.info("NexusRuntime started successfully")
         self._emit(RuntimeState.IDLE, "Nexus is ready")
     async def stop(self) -> None:
         """Stop services in reverse order and release local resources."""
         if not self._started:
+            logger.debug("NexusRuntime.stop skipped; not started")
             return
+        logger.info("NexusRuntime stopping...")
         await stop_optional("audio capture", self.services.capture, "stop")
         await stop_optional("TTS", self.services.tts, "unload_model")
         await stop_optional("STT", self.services.stt, "unload_model")
         await stop_optional("playback", self.services.playback, "stop")
         await stop_optional("LLM", self.services.llm, "close")
         self._started = False
+        logger.info("NexusRuntime stopped")
         self._emit(RuntimeState.STOPPED, "Nexus stopped")
     async def handle_text(self, text: str) -> str:
         """Process one text request through memory, LLM, and optional speech output."""
         prompt = text.strip()
         if not prompt:
             raise ValueError("text must not be empty")
+        logger.info("NexusRuntime.handle_text: prompt=%r", prompt[:200])
         self._emit(RuntimeState.PLANNING, "Generating response", {"input": prompt})
         try:
             context = self._memory_context(prompt)
             persona_prompt = self.persona.apply_persona(self.system_prompt + context)
+            logger.debug("NexusRuntime LLM prompt length=%d", len(persona_prompt))
             response = await self.services.llm.generate(
                 prompt, system_prompt=persona_prompt
             )
             answer = str(response.content).strip()
             if not answer:
                 raise RuntimeError("LLM returned an empty response")
+            logger.info("NexusRuntime LLM response length=%d: %r", len(answer), answer[:200])
             self._emit(RuntimeState.VERIFYING, "Response validated")
             self._remember(prompt, answer)
             await self._speak(answer)
             metadata = self.persona.response_metadata(confidence=0.9)
-            self._emit(RuntimeState.IDLE, "Response complete", {"response": answer, "persona": asdict(metadata)})
+            self._emit(
+                RuntimeState.IDLE,
+                "Response complete",
+                {
+                    "response": answer,
+                    "persona": asdict(metadata),
+                    "transcript": [
+                        {"role": "Kasutaja", "text": prompt},
+                        {"role": "Nexus", "text": answer},
+                    ],
+                },
+            )
             return answer
         except Exception as exc:
-            logger.exception("Nexus request failed")
+            logger.exception("NexusRuntime handle_text failed")
             self._emit(RuntimeState.ERROR, str(exc))
             raise
     async def handle_audio(self, audio: np.ndarray) -> str:
         """Transcribe captured audio and run the resulting text request."""
         if self.services.stt is None:
             raise RuntimeError("Speech-to-text is disabled")
+        logger.info("NexusRuntime.handle_audio: samples=%d", len(audio))
         self._emit(RuntimeState.UNDERSTANDING, "Transcribing speech")
         result = await self.services.stt.transcribe(audio)
-        return await self.handle_text(str(result.text))
+        text = str(result.text).strip()
+        logger.info("NexusRuntime STT result: text=%r language=%s", text[:200], result.language)
+        if not text:
+            self._emit(RuntimeState.IDLE, "No speech detected")
+            return ""
+        self._emit(RuntimeState.UNDERSTANDING, "Speech recognized", {"transcript": [{"role": "Kasutaja", "text": text}]})
+        return await self.handle_text(text)
     async def _speak(self, answer: str) -> None:
         if self.services.tts is None or self.services.playback is None:
+            logger.debug("NexusRuntime._speak skipped; tts=%s playback=%s", self.services.tts is not None, self.services.playback is not None)
             return
+        logger.debug("NexusRuntime._speak: text_length=%d", len(answer))
         self._emit(RuntimeState.SPEAKING, "Speaking response")
         await self.services.tts.speak(answer, self.services.playback)
+        logger.debug("NexusRuntime._speak complete")
     def _memory_context(self, prompt: str) -> str:
         if self.services.memory is None:
             return ""
@@ -138,15 +170,30 @@ class NexusRuntime:
         self.services.memory.add(prompt, metadata={"role": "user"})
         self.services.memory.add(answer, metadata={"role": "assistant"})
     def _on_speech_start(self) -> None:
-        self._emit(RuntimeState.LISTENING, "Speech detected")
+        def _emit() -> None:
+            self._emit(RuntimeState.LISTENING, "Speech detected")
+
+        if self._loop is None:
+            _emit()
+            return
+        if self._loop.is_running():
+            self._loop.call_soon_threadsafe(_emit)
+        else:
+            _emit()
+
     def _on_speech_end(self) -> None:
         if self._loop is None or self.services.capture is None:
             return
-        audio = self.services.capture.get_speech_buffer()
-        if audio is not None:
-            self._loop.call_soon_threadsafe(
-                lambda: asyncio.create_task(self._process_captured_audio(audio))
-            )
+
+        def _process() -> None:
+            audio = self.services.capture.get_speech_buffer()
+            if audio is not None:
+                asyncio.create_task(self._process_captured_audio(audio))
+
+        if self._loop.is_running():
+            self._loop.call_soon_threadsafe(_process)
+        else:
+            _process()
     async def _process_captured_audio(self, audio: np.ndarray) -> None:
         try:
             await self.handle_audio(audio)

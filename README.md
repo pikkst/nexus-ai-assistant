@@ -26,6 +26,12 @@ After installation, launch the assistant with:
 nexus
 ```
 
+For the graphical workspace UI, use:
+
+```bash
+nexus --ui
+```
+
 ## Requirements
 
 - Python 3.11+

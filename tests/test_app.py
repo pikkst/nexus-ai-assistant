@@ -49,6 +49,7 @@ class FakeLifecycle:
 @dataclass
 class FakeTranscript:
     text: str
+    language: str = "et"
 
 
 class FakeSTT:
