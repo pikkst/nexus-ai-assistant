@@ -44,6 +44,13 @@ def _similarity(query: Counter[str], document: Counter[str]) -> float:
     return dot_product / (query_norm * document_norm)
 
 
+def _safe_sensitivity(value: Any, default: str = "low") -> SensitivityLevel:
+    try:
+        return SensitivityLevel(value)
+    except ValueError:
+        return SensitivityLevel(default)
+
+
 def _entry_from_legacy(item: dict[str, Any]) -> MemoryEntry:
     """Convert a legacy v1 memory dict into a v2 MemoryEntry with safe defaults."""
     now = _utc_now().isoformat()
@@ -54,7 +61,7 @@ def _entry_from_legacy(item: dict[str, Any]) -> MemoryEntry:
         source=MemorySource.USER_STATED,
         confidence=float(item.get("metadata", {}).get("confidence", 0.5)),
         importance=float(item.get("metadata", {}).get("importance", 0.5)),
-        sensitivity=SensitivityLevel(item.get("metadata", {}).get("sensitivity", "low")),
+        sensitivity=_safe_sensitivity(item.get("metadata", {}).get("sensitivity", "low")),
         scope=MemoryScope.GLOBAL,
         created_at=item.get("created_at", now),
         updated_at=item.get("updated_at", now),

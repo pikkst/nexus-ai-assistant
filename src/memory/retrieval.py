@@ -109,12 +109,7 @@ class MemoryRetriever:
                 self._keyword_weight * keyword_score
                 + self._embedding_weight * embedding_score
             )
-            path = "hybrid"
-            if query_embeddings is None:
-                path = "keyword"
-            elif self._embedding_fn is None:
-                path = "keyword"
-            scored.append(MemoryResult(entry=entry, score=score, retrieval_path=path))
+            scored.append(MemoryResult(entry=entry, score=score, retrieval_path="keyword" if query_embeddings is None else "hybrid"))
 
         scored.sort(key=lambda result: (result.score, result.entry.created_at), reverse=True)
         scored = [r for r in scored if r.score > 0.0]

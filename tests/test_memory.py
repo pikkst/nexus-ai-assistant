@@ -160,6 +160,34 @@ def test_apply_retention_policy(tmp_path: Path) -> None:
     assert store.entries[0].text == "New entry"
 
 
+def test_apply_retention_max_entries_pruning(tmp_path: Path) -> None:
+    store = MemoryStore(tmp_path, max_age_days=None)
+    manager = MemoryManager(store)
+    for i in range(5):
+        store.add(f"Entry {i}", importance=float(5 - i) / 5.0, persist=False)
+    removed = manager.apply_retention(RetentionPolicy(max_age_days=None, max_entries=3))
+    assert removed == 2
+    assert len(store.entries) == 3
+
+
+def test_legacy_sensitivity_invalid_falls_back_to_low(tmp_path: Path) -> None:
+    legacy_path = tmp_path / "legacy.json"
+    legacy_payload = {
+        "version": 1,
+        "entries": [
+            {
+                "id": "legacy-1",
+                "text": "Old style memory",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "metadata": {"sensitivity": "totally_invalid"},
+            }
+        ],
+    }
+    legacy_path.write_text(json.dumps(legacy_payload), encoding="utf-8")
+    store = MemoryStore(legacy_path)
+    assert store.entries[0].sensitivity == SensitivityLevel.LOW
+
+
 def test_retriever_keyword_only(tmp_path: Path) -> None:
     store = MemoryStore(tmp_path)
     store.add("Python is a programming language", memory_type=MemoryType.SEMANTIC)

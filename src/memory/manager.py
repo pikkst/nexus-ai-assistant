@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from .models import (
     DEFAULT_RETENTION,
@@ -17,8 +16,8 @@ from .models import (
     RetentionPolicy,
     SensitivityLevel,
 )
+from .retrieval import EmbeddingFn, MemoryRetriever, RetrievalQuery
 from .store import MemoryStore
-from .retrieval import MemoryRetriever, RetrievalQuery
 
 logger = logging.getLogger(__name__)
 
@@ -198,8 +197,9 @@ class MemoryManager:
                 kept.append(entry)
             kept.sort(key=lambda e: (e.importance, e.created_at), reverse=True)
             if policy.max_entries is not None:
+                pre_slice = len(kept)
                 kept = kept[: policy.max_entries]
-                removed += max(0, len(kept) - policy.max_entries)
+                removed += max(0, pre_slice - policy.max_entries)
             self.store._entries = kept
             if removed:
                 self.store.save()
@@ -208,7 +208,7 @@ class MemoryManager:
     def build_retriever(
         self,
         *,
-        embedding_fn: any = None,
+        embedding_fn: EmbeddingFn | None = None,
         keyword_weight: float = 0.6,
         embedding_weight: float = 0.4,
     ) -> MemoryRetriever:
@@ -224,7 +224,7 @@ class MemoryManager:
         self,
         query: RetrievalQuery,
         *,
-        embedding_fn: any = None,
+        embedding_fn: EmbeddingFn | None = None,
     ) -> list[MemoryResult]:
         """Retrieve memories matching the query."""
         retriever = self.build_retriever(embedding_fn=embedding_fn)
