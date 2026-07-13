@@ -120,7 +120,7 @@ async def test_send_attachment_returns_sent_message(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_audit_redacts_telegram_fields(tmp_path: Path):
+async def test_audit_records_telegram_send_without_over_redacting(tmp_path: Path):
     provider = _make_provider()
     registry = create_telegram_registry(provider, audit_path=tmp_path / "audit.jsonl")
     await registry.invoke(ToolRequest("telegram.send_message", {"chat_id": "123", "text": "secret"}))
@@ -129,3 +129,4 @@ async def test_audit_redacts_telegram_fields(tmp_path: Path):
     record = entries[-1]
     assert record.tool_name == "telegram.send_message"
     assert record.arguments["chat_id"] == "123"
+    assert record.arguments["text"] == "secret"
