@@ -13,6 +13,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from .models import (
+    DEFAULT_RETENTION,
+    MemoryEntry,
+    MemoryResult,
+    MemoryScope,
+    MemorySource,
+    MemoryType,
+    SensitivityLevel,
+)
+
 _TOKEN_PATTERN = re.compile(r"[^\W_]+", re.UNICODE)
 
 
@@ -34,26 +44,46 @@ def _similarity(query: Counter[str], document: Counter[str]) -> float:
     return dot_product / (query_norm * document_norm)
 
 
-@dataclass(frozen=True, slots=True)
-class MemoryEntry:
-    """One persisted conversation snippet."""
-
-    id: str
-    text: str
-    created_at: str
-    metadata: dict[str, Any] = field(default_factory=dict)
+def _safe_sensitivity(value: Any, default: str = "low") -> SensitivityLevel:
+    try:
+        return SensitivityLevel(value)
+    except ValueError:
+        return SensitivityLevel(default)
 
 
-@dataclass(frozen=True, slots=True)
-class MemoryResult:
-    """A memory entry and its relevance score."""
+def _entry_from_legacy(item: dict[str, Any]) -> MemoryEntry:
+    """Convert a legacy v1 memory dict into a v2 MemoryEntry with safe defaults."""
+    now = _utc_now().isoformat()
+    return MemoryEntry(
+        id=item.get("id", uuid.uuid4().hex),
+        memory_type=MemoryType.EPISODIC,
+        text=item.get("text", ""),
+        source=MemorySource.USER_STATED,
+        confidence=float(item.get("metadata", {}).get("confidence", 0.5)),
+        importance=float(item.get("metadata", {}).get("importance", 0.5)),
+        sensitivity=_safe_sensitivity(item.get("metadata", {}).get("sensitivity", "low")),
+        scope=MemoryScope.GLOBAL,
+        created_at=item.get("created_at", now),
+        updated_at=item.get("updated_at", now),
+        metadata=item.get("metadata", {}),
+        supersedes=item.get("metadata", {}).get("supersedes"),
+        summary_of=tuple(item.get("metadata", {}).get("summary_of", [])),
+    )
 
-    entry: MemoryEntry
-    score: float
+
+def _entry_to_dict(entry: MemoryEntry) -> dict[str, Any]:
+    """Serialize a MemoryEntry, flattening enums and tuples for JSON."""
+    data = asdict(entry)
+    data["memory_type"] = entry.memory_type.value
+    data["source"] = entry.source.value
+    data["sensitivity"] = entry.sensitivity.value
+    data["scope"] = entry.scope.value
+    data["summary_of"] = list(entry.summary_of)
+    return data
 
 
 class MemoryStore:
-    """Thread-safe JSON store for small, local conversation histories."""
+    """Thread-safe JSON store for structured, multi-layer memory."""
 
     def __init__(
         self,
@@ -93,22 +123,44 @@ class MemoryStore:
         self,
         text: str,
         *,
+        memory_type: MemoryType = MemoryType.EPISODIC,
+        source: MemorySource = MemorySource.USER_STATED,
+        confidence: float = 0.5,
+        importance: float = 0.5,
+        sensitivity: SensitivityLevel = SensitivityLevel.LOW,
+        scope: MemoryScope = MemoryScope.GLOBAL,
         metadata: dict[str, Any] | None = None,
         created_at: datetime | None = None,
+        supersedes: str | None = None,
+        summary_of: tuple[str, ...] = (),
         persist: bool = True,
     ) -> MemoryEntry:
-        """Add a non-empty snippet and optionally persist it immediately."""
+        """Add a non-empty memory and optionally persist it immediately."""
         text = text.strip()
         if not text:
             raise ValueError("Memory text cannot be empty")
+        if not 0.0 <= confidence <= 1.0:
+            raise ValueError("confidence must be between 0.0 and 1.0")
+        if not 0.0 <= importance <= 1.0:
+            raise ValueError("importance must be between 0.0 and 1.0")
         timestamp = created_at or _utc_now()
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=timezone.utc)
+        now_iso = timestamp.astimezone(timezone.utc).isoformat()
         entry = MemoryEntry(
             id=uuid.uuid4().hex,
+            memory_type=memory_type,
             text=text,
-            created_at=timestamp.astimezone(timezone.utc).isoformat(),
+            source=source,
+            confidence=confidence,
+            importance=importance,
+            sensitivity=sensitivity,
+            scope=scope,
+            created_at=now_iso,
+            updated_at=now_iso,
             metadata=dict(metadata or {}),
+            supersedes=supersedes,
+            summary_of=summary_of,
         )
         with self._lock:
             self._entries.append(entry)
@@ -161,7 +213,10 @@ class MemoryStore:
         with self._lock:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             temporary_path = self.path.with_suffix(self.path.suffix + ".tmp")
-            payload = {"version": 1, "entries": [asdict(entry) for entry in self._entries]}
+            payload = {
+                "version": 2,
+                "entries": [_entry_to_dict(entry) for entry in self._entries],
+            }
             temporary_path.write_text(
                 json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
             )
@@ -176,7 +231,32 @@ class MemoryStore:
             try:
                 payload = json.loads(self.path.read_text(encoding="utf-8"))
                 raw_entries = payload.get("entries", [])
-                self._entries = [MemoryEntry(**item) for item in raw_entries]
+                version = payload.get("version", 1)
+                if version == 1:
+                    self._entries = [_entry_from_legacy(item) for item in raw_entries]
+                else:
+                    for item in raw_entries:
+                        item.setdefault("supersedes", None)
+                        if "summary_of" in item and isinstance(item["summary_of"], list):
+                            item["summary_of"] = tuple(item["summary_of"])
+                        elif "summary_of" not in item:
+                            item["summary_of"] = ()
+                    self._entries = [MemoryEntry(**item) for item in raw_entries]
             except (OSError, json.JSONDecodeError, TypeError, ValueError, KeyError) as exc:
                 raise ValueError(f"Cannot load memory store from {self.path}") from exc
             self.prune(persist=False)
+
+    def migrate(self) -> int:
+        """Migrate legacy entries in place if needed; returns number migrated."""
+        with self._lock:
+            if not self._entries:
+                return 0
+            legacy_count = sum(
+                1 for entry in self._entries if entry.memory_type == MemoryType.EPISODIC
+                and entry.source == MemorySource.USER_STATED
+                and not entry.metadata
+                and entry.scope == MemoryScope.GLOBAL
+            )
+            if legacy_count:
+                self.save()
+            return legacy_count
