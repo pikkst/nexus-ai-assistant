@@ -441,17 +441,18 @@ class MemoryStore:
     def clear_by_time_range(self, start: datetime, end: datetime) -> int:
         """Delete all memories within a time range. Returns count removed."""
         with self._lock:
-            to_remove = [e.id for e in self._entries if e.id in 
-                         [x.id for x in self._filter_by_time_range(start, end)]]
-            self._entries = [e for e in self._entries if e not in self._filter_by_time_range(start, end)]
-            if to_remove:
-                self._record_audit(
-                    "clear_by_time_range",
-                    ",".join(to_remove),
-                    {"start": start.isoformat(), "end": end.isoformat()},
-                )
-                self.save()
-            return len(to_remove)
+            matched = self._filter_by_time_range(start, end)
+            remove_ids = {entry.id for entry in matched}
+            if not remove_ids:
+                return 0
+            self._entries = [entry for entry in self._entries if entry.id not in remove_ids]
+            self._record_audit(
+                "clear_by_time_range",
+                ",".join(sorted(remove_ids)),
+                {"start": start.isoformat(), "end": end.isoformat()},
+            )
+            self.save()
+            return len(remove_ids)
 
     def check_consent(self, sensitivity: SensitivityLevel, policy: ConsentPolicy) -> bool:
         """Check if a memory with given sensitivity can be stored under the policy."""
@@ -459,6 +460,10 @@ class MemoryStore:
             return False
         if policy.action == ConsentAction.ALLOW:
             return True
+        if sensitivity == SensitivityLevel.HIGH:
+            return False
+        if sensitivity == SensitivityLevel.MEDIUM:
+            return False
         return True
 
     def contains_sensitive(self, text: str, policy: ConsentPolicy) -> bool:
