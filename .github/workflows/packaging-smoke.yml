@@ -27,4 +27,11 @@ jobs:
       - name: Verify CLI entry point
         run: /tmp/nexus-smoke/bin/nexus --help
       - name: Verify core imports
-        run: /tmp/nexus-smoke/bin/python -c "import src; import src.main; import src.app; import src.audio; import src.config; import src.llm; import src.memory; import src.stt; import src.tts; import src.ui; import src.vision; print('Installed package imports OK')"
+        run: |
+          /tmp/nexus-smoke/bin/python -c "
+          import src; import src.main; import src.app;
+          import src.audio; import src.config; import src.llm;
+          import src.memory; import src.stt; import src.tts;
+          import src.ui; import src.vision;
+          print('Installed package imports OK')
+          "

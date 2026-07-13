@@ -19,7 +19,7 @@ def test_pyproject_toml_is_valid() -> None:
     assert project["requires-python"] == ">=3.11"
     scripts = project.get("scripts", {})
     assert "nexus" in scripts
-    assert "src.main:main" in scripts["nexus"]
+    assert scripts["nexus"] == "src.main:main"
 
 
 def test_entry_point_module_importable() -> None:
