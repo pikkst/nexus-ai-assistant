@@ -12,7 +12,6 @@ from typing import Any
 from .audit import ToolAuditLog
 from .mcp_client import McpClient, McpError, McpTimeoutError
 from .models import RiskLevel, Tool, ToolValidationError
-from .permissions import PermissionPolicy
 from .plugin_adapter import McpTool, PluginTool
 from .plugin_models import McpServerConfig, PluginManifest, PluginToolSchema
 from .registry import ToolRegistry

@@ -8,10 +8,8 @@ from typing import Any, Callable
 from .models import (
     RiskLevel,
     Tool,
-    ToolDescriptor,
     ToolError,
     ToolValidationError,
-    utc_now,
 )
 from .plugin_models import PluginToolSchema
 

@@ -5,12 +5,12 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator
+from typing import Any
 
 import httpx
 
 from .plugin_models import McpServerConfig
-from .models import ToolDescriptor, ToolError, utc_now
+from .models import ToolError
 
 
 class McpError(ToolError):
